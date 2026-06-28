@@ -12,6 +12,12 @@ allprojects {
         // 1. 上海交大 BMCLAPI（代理 NeoForge 和 Minecraft 相关依赖，优先级最高）
         maven {
             url 'https://mirror.sjtu.edu.cn/bmclapi/'
+            content {
+                includeGroup 'net.minecraft'
+                includeGroup 'net.neoforged'
+                includeGroup 'net.fabricmc'
+                includeGroup 'net.minecraftforge'
+            }
         }
         // 2. 阿里云公共仓库（代理 Central、Google、JCenter 等）
         maven {
