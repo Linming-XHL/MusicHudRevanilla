@@ -9,6 +9,7 @@ import indi.etern.musichud.client.audio.decoder.AudioDecoder;
 import indi.etern.musichud.client.audio.decoder.AudioFormatDetector;
 import indi.etern.musichud.client.services.MusicService;
 import indi.etern.musichud.client.ui.hud.renderer.PlayingStatusRenderer;
+import indi.etern.musichud.client.ui.ToastUtil;
 import indi.etern.musichud.interfaces.ClientConfig;
 import indi.etern.musichud.network.IClientNetworkService;
 import indi.etern.musichud.network.payloads.requestResponseCycle.GetMusicResourceRequest;
@@ -41,6 +42,7 @@ import java.util.function.Consumer;
 public class StreamAudioPlayer {
     private static final int BUFFER_COUNT = 4;
     private static final int BUFFER_SIZE = 65536;
+    private static final int MAX_DOWNLOAD_RETRIES = 2;
     private static final Logger LOGGER = MusicHud.getLogger(StreamAudioPlayer.class);
     private static final ClientConfig clientConfig = ClientConfig.getInstance();
     private static volatile StreamAudioPlayer instance = null;
@@ -75,12 +77,6 @@ public class StreamAudioPlayer {
     }
 
     private static AudioDecoder loadAudioDecoder(String urlString, FormatType formatType) throws URISyntaxException, IOException {
-        // Replace inaccessible CDN URLs
-        if (urlString.contains("p4.music.126.net") || urlString.contains("p3.music.126.net") || urlString.contains("p2.music.126.net")) {
-            String newUrl = urlString.replaceAll("p[234]\\.music\\.126\\.net", "m801.music.126.net");
-            LOGGER.info("Replacing audio CDN URL: {} -> {}", urlString, newUrl);
-            urlString = newUrl;
-        }
         LOGGER.info("Loading audio from: {}", urlString);
         URL url = new URI(urlString).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -359,29 +355,38 @@ public class StreamAudioPlayer {
 
         int localRetryCount = 0;
         boolean forceSyncInternal = forceSync;
+        boolean shouldRequestResource = true;
 
         MusicResourceInfo musicResourceInfo = MusicResourceInfo.NONE;
         while (!currentDownloadFuture.isDone() && currentDownloadFuture == downloadFuture) {
             try {
-                if (musicResourceInfo == null || musicResourceInfo.equals(MusicResourceInfo.NONE) || localRetryCount % 3 == 0) {
+                if (shouldRequestResource || musicResourceInfo == null || musicResourceInfo.equals(MusicResourceInfo.NONE)) {
                     LOGGER.debug("Waiting for music resource info...");
                     try {
                         musicResourceInfo = getCurrentMusicResourceInfo(clientConfig.getPrimaryChosenQuality(), musicResourceInfo).get(10, TimeUnit.SECONDS);
+                        shouldRequestResource = false;
                     } catch (TimeoutException e) {
                         LOGGER.warn("Timeout waiting for music resource info");
-                        localRetryCount++;
+                        if (!handleDownloadRetry(++localRetryCount, "Timeout waiting for music resource info", downloadInitializedFuture, currentDownloadFuture)) {
+                            break;
+                        }
                         setStatus(Status.RETRYING);
                         continue;
                     } catch (ExecutionException e) {
-                        LOGGER.error("Failed to get music resource info: {}", e.getCause().getMessage());
-                        localRetryCount++;
+                        Throwable cause = e.getCause() == null ? e : e.getCause();
+                        LOGGER.error("Failed to get music resource info: {}", cause.getMessage());
+                        if (!handleDownloadRetry(++localRetryCount, "Failed to get music resource info: " + cause.getMessage(), downloadInitializedFuture, currentDownloadFuture)) {
+                            break;
+                        }
                         setStatus(Status.RETRYING);
                         Thread.sleep(2000);
                         continue;
                     }
                     if (musicResourceInfo == null || musicResourceInfo.getUrl().isEmpty()) {
                         LOGGER.warn("Got empty music resource info, retrying...");
-                        localRetryCount++;
+                        if (!handleDownloadRetry(++localRetryCount, "Got empty music resource info", downloadInitializedFuture, currentDownloadFuture)) {
+                            break;
+                        }
                         setStatus(Status.RETRYING);
                         Thread.sleep(1000);
                         continue;
@@ -447,7 +452,10 @@ public class StreamAudioPlayer {
 
                 playedBytes = 0;
                 forceSyncInternal = true;
-                localRetryCount++;
+                shouldRequestResource = true;
+                if (!handleDownloadRetry(++localRetryCount, e.getClass().getSimpleName() + ": " + e.getMessage(), downloadInitializedFuture, currentDownloadFuture)) {
+                    break;
+                }
                 setStatus(Status.RETRYING);
 
                 try {
@@ -464,6 +472,23 @@ public class StreamAudioPlayer {
         }
 
         LOGGER.debug("Download task finished");
+    }
+
+    private boolean handleDownloadRetry(int retryCount, String reason, CompletableFuture<Void> downloadInitializedFuture, CompletableFuture<?> currentDownloadFuture) {
+        if (retryCount <= MAX_DOWNLOAD_RETRIES) {
+            notifyClient(I18n.get(MusicHud.MOD_ID + ".text.failedToLoadMusicResource") + ": " + reason + " (" + retryCount + "/" + MAX_DOWNLOAD_RETRIES + ")");
+            return true;
+        }
+        LOGGER.error("Audio download failed after {} retries: {}", MAX_DOWNLOAD_RETRIES, reason);
+        notifyClient(I18n.get(MusicHud.MOD_ID + ".text.failedToLoadMusicResource") + ": " + reason);
+        setStatus(Status.ERROR);
+        downloadInitializedFuture.complete(null);
+        currentDownloadFuture.completeExceptionally(new IOException(reason));
+        return false;
+    }
+
+    private void notifyClient(String message) {
+        ToastUtil.show(message);
     }
 
     private void syncPlaying(CompletableFuture<?> currentDownloadFuture) {
