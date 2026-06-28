@@ -15,7 +15,7 @@ import indi.etern.musichud.network.payloads.requestResponseCycle.SearchMusicResp
 import indi.etern.musichud.network.payloads.requestResponseCycle.SearchPlaylistsResponse;
 import indi.etern.musichud.network.payloads.requestResponseCycle.SearchRequest;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -196,7 +196,7 @@ public class SearchTabScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
