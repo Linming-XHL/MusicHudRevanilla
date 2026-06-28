@@ -189,5 +189,6 @@
   "music_hud.gui.text.loggingIn": "Logging in...",
   "music_hud.gui.text.loggedOut": "Logged out",
   "music_hud.gui.text.disconnected": "Disconnected",
-  "music_hud.gui.text.networkRequired": "Requires server connection"
+  "music_hud.gui.text.networkRequired": "Requires server connection",
+  "music_hud.gui.text.searching": "Searching..."
 }

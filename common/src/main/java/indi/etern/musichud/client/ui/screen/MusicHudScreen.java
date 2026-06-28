@@ -1,15 +1,20 @@
 package indi.etern.musichud.client.ui.screen;
 
 import indi.etern.musichud.MusicHud;
+import indi.etern.musichud.beans.api.SearchType;
 import indi.etern.musichud.beans.music.MusicDetail;
 import indi.etern.musichud.client.audio.NowPlayingInfo;
 import indi.etern.musichud.client.services.LoginService;
 import indi.etern.musichud.client.services.MusicService;
 import indi.etern.musichud.client.ui.ToastUtil;
 import indi.etern.musichud.interfaces.ClientConfig;
+import indi.etern.musichud.network.IClientNetworkService;
+import indi.etern.musichud.network.payloads.requestResponseCycle.SearchMusicResponse;
+import indi.etern.musichud.network.payloads.requestResponseCycle.SearchRequest;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
@@ -24,6 +29,10 @@ public class MusicHudScreen extends Screen {
     private final Screen previous;
     private int selectedTab = 0;
     private final List<String> tabs = new ArrayList<>();
+    private EditBox searchBox;
+    private String searchQuery = "";
+    private List<MusicDetail> searchResults = new ArrayList<>();
+    private boolean hasSearched = false;
 
     public MusicHudScreen(@Nullable Screen previous) {
         super(Component.translatable(MusicHud.MOD_ID + ".gui.title"));
@@ -138,24 +147,50 @@ public class MusicHudScreen extends Screen {
     }
 
     private void addSearchWidgets(int centerX, int y) {
-        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.searchMusic"), button -> {
-            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.networkRequired"));
+        searchBox = new EditBox(font, centerX - 100, y, 200, 20, Component.translatable(MusicHud.MOD_ID + ".field.hint.searchMusic"));
+        searchBox.setValue(searchQuery);
+        searchBox.setResponder(value -> searchQuery = value);
+        addRenderableWidget(searchBox);
+        y += 24;
+
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".button.searchMusic"), button -> {
+            performSearch();
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.searchArtist"), button -> {
-            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.networkRequired"));
-        }).bounds(centerX - 100, y, 200, 20).build());
-        y += 24;
+        if (hasSearched) {
+            if (searchResults.isEmpty()) {
+                graphics.text(font, I18n.get(MusicHud.MOD_ID + ".text.searchNoMoreResult"), centerX - 50, y, 0xFFA0A0A0, false);
+                y += 20;
+            } else {
+                for (int i = 0; i < Math.min(searchResults.size(), 5); i++) {
+                    MusicDetail detail = searchResults.get(i);
+                    String name = detail.getName();
+                    if (name.length() > 25) name = name.substring(0, 22) + "...";
+                    int index = i;
+                    addRenderableWidget(Button.builder(Component.literal(name), button -> {
+                        MusicService.getInstance().sendPushMusicToQueue(searchResults.get(index));
+                        ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.pushedMusicToPlaylist"));
+                    }).bounds(centerX - 100, y, 200, 20).build());
+                    y += 22;
+                }
+            }
+        }
+    }
 
-        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.searchAlbum"), button -> {
-            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.networkRequired"));
-        }).bounds(centerX - 100, y, 200, 20).build());
-        y += 24;
+    private void performSearch() {
+        if (searchQuery == null || searchQuery.trim().isEmpty()) {
+            return;
+        }
 
-        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.searchPlaylist"), button -> {
-            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.networkRequired"));
-        }).bounds(centerX - 100, y, 200, 20).build());
+        SearchMusicResponse.setReceiver(response -> {
+            searchResults = response.result();
+            hasSearched = true;
+            Minecraft.getInstance().execute(this::rebuildWidgets);
+        });
+
+        IClientNetworkService.getInstance().sendToServer(new SearchRequest(searchQuery, SearchType.MUSIC, 0));
+        ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.searching"));
     }
 
     private void addAccountWidgets(int centerX, int y) {
