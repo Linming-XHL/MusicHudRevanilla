@@ -160,8 +160,8 @@ public class MusicHudScreen extends Screen {
 
         if (hasSearched) {
             if (searchResults.isEmpty()) {
-                graphics.text(font, I18n.get(MusicHud.MOD_ID + ".text.searchNoMoreResult"), centerX - 50, y, 0xFFA0A0A0, false);
-                y += 20;
+                addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".text.searchNoMoreResult"), button -> {}).bounds(centerX - 100, y, 200, 20).build());
+                y += 24;
             } else {
                 for (int i = 0; i < Math.min(searchResults.size(), 5); i++) {
                     MusicDetail detail = searchResults.get(i);
