@@ -8,7 +8,7 @@ public class ToastUtil {
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.submit(() -> {
             if (minecraft.player != null) {
-                minecraft.player.displayClientMessage(Component.literal(message.toString()), true);
+                minecraft.player.sendSystemMessage(Component.literal(message.toString()));
             }
         });
     }
