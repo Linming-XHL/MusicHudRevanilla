@@ -21,7 +21,12 @@ import indi.etern.musichud.network.payloads.pushMessages.s2c.LoginResultMessage;
 import indi.etern.musichud.network.payloads.requestResponseCycle.AnonymousLoginRequest;
 import indi.etern.musichud.network.payloads.requestResponseCycle.ConnectRequest;
 import indi.etern.musichud.network.payloads.requestResponseCycle.CookieLoginRequest;
+import indi.etern.musichud.network.payloads.requestResponseCycle.PhoneCodeLoginRequest;
+import indi.etern.musichud.network.payloads.requestResponseCycle.SendPhoneValidationCodeRequest;
+import indi.etern.musichud.network.payloads.requestResponseCycle.SendPhoneValidationCodeResponse;
+import indi.etern.musichud.network.payloads.requestResponseCycle.StartQRLoginRequest;
 import indi.etern.musichud.network.payloads.requestResponseCycle.StartQRLoginResponse;
+import indi.etern.musichud.network.payloads.requestResponseCycle.CancelQRLoginRequest;
 import indi.etern.musichud.server.api.MusicPlayerServerService;
 import indi.etern.musichud.server.api.impl.ncm.LoginApiService;
 import lombok.Getter;
@@ -220,6 +225,56 @@ public class LoginService {
         } else {
             ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.switchConnectionUnavailableInIntegratedServer"));
         }
+    }
+
+    public void startQRLogin(Consumer<StartQRLoginResponse> callback) {
+        setLoginResponseHandler(callback);
+        clientNetworkService.sendToServer(StartQRLoginRequest.REQUEST);
+    }
+
+    public void cancelQRLogin() {
+        setLoginResponseHandler(null);
+        clientNetworkService.sendToServer(CancelQRLoginRequest.REQUEST);
+    }
+
+    public String getProfile() {
+        Profile profile = Profile.getCurrent();
+        return profile != null ? profile.getNickname() : "Guest";
+    }
+
+    public void sendPhoneCode(long phone, Consumer<SendPhoneValidationCodeResponse> callback) {
+        SendPhoneValidationCodeResponse.setReceiver(callback);
+        clientNetworkService.sendToServer(new SendPhoneValidationCodeRequest(86, phone));
+    }
+
+    public void verifyPhoneCode(long phone, int code, Consumer<Boolean> callback) {
+        loginResultReceiver = (loginResult, player) -> {
+            MusicHud.EXECUTOR.submit(() -> {
+                if (loginResult.success()) {
+                    LoginCookieInfo loginCookieInfo = loginResult.loginCookieInfo();
+                    loginCookieInfo.setToClientCookie();
+                    Profile.setCurrent(loginResult.profile());
+                    ProfileConfigData profileConfigData = ProfileConfigData.getInstance();
+                    profileConfigData.setProfile(loginResult.profile());
+                    profileConfigData.saveToConfig();
+                    loginCompleteListeners.forEach(c -> c.accept(loginCookieInfo));
+                    callback.accept(true);
+                } else {
+                    String message = loginResult.message();
+                    if (message.startsWith(MusicHud.MOD_ID)) {
+                        message = I18n.get(message);
+                    }
+                    ToastUtil.show(message);
+                    callback.accept(false);
+                }
+            });
+        };
+        clientNetworkService.sendToServer(new PhoneCodeLoginRequest(86, phone, code));
+    }
+
+    public void loginWithPassword(String phone, String password, Consumer<Boolean> callback) {
+        ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.passwordLoginNotSupported"));
+        callback.accept(false);
     }
 
     @RegisterMark

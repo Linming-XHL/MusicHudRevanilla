@@ -1,23 +1,27 @@
 package indi.etern.musichud.client.ui.screen;
 
 import indi.etern.musichud.MusicHud;
-import indi.etern.musichud.beans.music.MusicDetail;
-import indi.etern.musichud.client.audio.NowPlayingInfo;
 import indi.etern.musichud.client.services.LoginService;
 import indi.etern.musichud.client.services.MusicService;
 import indi.etern.musichud.interfaces.ClientConfig;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MusicHudScreen extends Screen {
     private static final ClientConfig CLIENT_CONFIG = ClientConfig.getInstance();
     @Nullable
     private final Screen previous;
+    private int selectedTab = 0;
+    private Screen currentTabScreen;
+    private List<Tab> tabs = new ArrayList<>();
 
     public MusicHudScreen(@Nullable Screen previous) {
         super(Component.literal("Music HUD"));
@@ -39,77 +43,102 @@ public class MusicHudScreen extends Screen {
 
     @Override
     protected void init() {
+        setupTabs();
         rebuildWidgets();
     }
 
-    private void rebuildWidgets() {
+    private void setupTabs() {
+        tabs.clear();
+        tabs.add(new Tab(I18n.get(MusicHud.MOD_ID + ".gui.tab.home"), this::createHomeScreen));
+        tabs.add(new Tab(I18n.get(MusicHud.MOD_ID + ".gui.tab.search"), this::createSearchScreen));
+        tabs.add(new Tab(I18n.get(MusicHud.MOD_ID + ".gui.tab.account"), this::createAccountScreen));
+        tabs.add(new Tab(I18n.get(MusicHud.MOD_ID + ".gui.tab.settings"), this::createSettingsScreen));
+    }
+
+    private Screen createHomeScreen() {
+        return new HomeTabScreen(this);
+    }
+
+    private Screen createSearchScreen() {
+        return new SearchTabScreen(this);
+    }
+
+    private Screen createAccountScreen() {
+        return new AccountTabScreen(this);
+    }
+
+    private Screen createSettingsScreen() {
+        return new SettingsTabScreen(this);
+    }
+
+    private void switchTab(int index) {
+        if (index < 0 || index >= tabs.size()) return;
+        selectedTab = index;
+        currentTabScreen = tabs.get(index).factory.apply(this);
+        if (currentTabScreen != null) {
+            currentTabScreen.init(this.minecraft, this.width, this.height);
+        }
+        rebuildWidgets();
+    }
+
+    @Override
+    protected void rebuildWidgets() {
         clearWidgets();
-        int centerX = width / 2;
-        int y = height / 2 + 10;
-        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".button.voteForSkip"), button ->
-                MusicHud.EXECUTOR.execute(() -> MusicService.getInstance().keyBindsVoteSkipCurrent())
-        ).bounds(centerX - 102, y, 100, 20).build());
-        addRenderableWidget(Button.builder(Component.literal(CLIENT_CONFIG.getEnableHud() ? "Hide HUD" : "Show HUD"), button -> {
-            MusicHud.EXECUTOR.execute(() -> {
-                CLIENT_CONFIG.setEnableHud(!CLIENT_CONFIG.getEnableHud());
-                CLIENT_CONFIG.save();
-                refresh();
-            });
-        }).bounds(centerX + 2, y, 100, 20).build());
 
-        y += 24;
-        addRenderableWidget(Button.builder(Component.literal(CLIENT_CONFIG.getMuted() ? "Unmute" : "Mute"), button -> {
-            MusicHud.EXECUTOR.execute(() -> {
-                CLIENT_CONFIG.setMuted(!CLIENT_CONFIG.getMuted());
-                CLIENT_CONFIG.save();
-                refresh();
-            });
-        }).bounds(centerX - 102, y, 100, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Toggle Connection"), button ->
-                MusicHud.EXECUTOR.execute(LoginService.getInstance()::keyBindsToggleConnection)
-        ).bounds(centerX + 2, y, 100, 20).build());
+        int tabY = 10;
+        int tabHeight = 20;
+        int tabWidth = 80;
+        int startX = (width - tabs.size() * tabWidth) / 2;
 
-        y += 24;
+        for (int i = 0; i < tabs.size(); i++) {
+            Tab tab = tabs.get(i);
+            int x = startX + i * tabWidth;
+            int tabIndex = i;
+            addRenderableWidget(Button.builder(Component.literal(tab.name), button -> switchTab(tabIndex))
+                    .bounds(x, tabY, tabWidth, tabHeight)
+                    .build());
+        }
+
+        if (currentTabScreen != null) {
+            this.children.addAll(currentTabScreen.children());
+        }
+
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
-                .bounds(centerX - 50, y, 100, 20).build());
+                .bounds(width / 2 - 50, height - 25, 100, 20).build());
     }
 
     @Override
-    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float deltaTick) {
-        super.extractBackground(graphics, mouseX, mouseY, deltaTick);
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBackground(graphics, mouseX, mouseY, partialTick);
         graphics.fill(0, 0, width, height, 0x99000000);
-    }
 
-    @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float deltaTick) {
-        super.extractRenderState(graphics, mouseX, mouseY, deltaTick);
-        int centerX = width / 2;
-        int y = height / 2 - 70;
-        graphics.text(font, title, centerX - font.width(title) / 2, y, 0xFFFFFFFF, true);
-        y += 22;
+        if (currentTabScreen != null) {
+            currentTabScreen.render(graphics, mouseX, mouseY, partialTick);
+        }
 
-        MusicDetail music = NowPlayingInfo.getInstance().getCurrentlyPlayingMusicDetail();
-        String musicName = music == null || music == MusicDetail.NONE
-                ? I18n.get(MusicHud.MOD_ID + ".text.idle")
-                : music.getName();
-        drawCentered(graphics, I18n.get(MusicHud.MOD_ID + ".text.currentMusic") + ": " + musicName, y);
-        y += 12;
-        drawCentered(graphics, "Status: " + MusicHud.getConnectStatus(), y);
-        y += 12;
-        drawCentered(graphics, "Volume: " + (CLIENT_CONFIG.getMuted() ? 0 : CLIENT_CONFIG.getSoundVolume()), y);
-    }
-
-    private void drawCentered(GuiGraphicsExtractor graphics, String text, int y) {
-        graphics.text(font, text, width / 2 - font.width(text) / 2, y, 0xFFE0E0E0, false);
+        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
     public void onClose() {
-        minecraft.setScreen(previous);
+        if (currentTabScreen != null) {
+            currentTabScreen.onClose();
+        }
+        this.minecraft.setScreen(previous);
     }
 
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private static class Tab {
+        final String name;
+        final java.util.function.Function<MusicHudScreen, Screen> factory;
+
+        Tab(String name, java.util.function.Function<MusicHudScreen, Screen> factory) {
+            this.name = name;
+            this.factory = factory;
+        }
     }
 }

@@ -11,8 +11,9 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
 import java.util.List;
+import java.util.function.Consumer;
 
-public record SearchArtistsResponse(int offset,List<Artist> result) implements S2CPayload {
+public record SearchArtistsResponse(int offset, List<Artist> result) implements S2CPayload {
     public static final StreamCodec<RegistryFriendlyByteBuf, SearchArtistsResponse> CODEC = StreamCodec.composite(
             ByteBufCodecs.INT,
             SearchArtistsResponse::offset,
@@ -21,12 +22,22 @@ public record SearchArtistsResponse(int offset,List<Artist> result) implements S
             SearchArtistsResponse::new
     );
 
+    static Consumer<SearchArtistsResponse> consumer;
+
+    public static void setReceiver(Consumer<SearchArtistsResponse> receiver) {
+        consumer = receiver;
+    }
+
     @RegisterMark
     public static class RegisterImpl implements CommonRegister {
         @Override
         public void register() {
             INetworkRegister.getInstance().autoRegisterPayload(SearchArtistsResponse.class, CODEC,
-                    (message, player) -> {}
+                    (message, player) -> {
+                        if (consumer != null) {
+                            consumer.accept(message);
+                        }
+                    }
             );
         }
     }

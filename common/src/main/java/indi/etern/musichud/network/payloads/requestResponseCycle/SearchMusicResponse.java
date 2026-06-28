@@ -5,12 +5,14 @@ import indi.etern.musichud.interfaces.CommonRegister;
 import indi.etern.musichud.interfaces.RegisterMark;
 import indi.etern.musichud.network.Codecs;
 import indi.etern.musichud.network.INetworkRegister;
+import indi.etern.musichud.network.NetworkReceiver;
 import indi.etern.musichud.network.payloads.S2CPayload;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public record SearchMusicResponse(int offset, List<MusicDetail> result) implements S2CPayload {
     public static final StreamCodec<RegistryFriendlyByteBuf, SearchMusicResponse> CODEC = StreamCodec.composite(
@@ -21,12 +23,22 @@ public record SearchMusicResponse(int offset, List<MusicDetail> result) implemen
             SearchMusicResponse::new
     );
 
+    static Consumer<SearchMusicResponse> consumer;
+
+    public static void setReceiver(Consumer<SearchMusicResponse> receiver) {
+        consumer = receiver;
+    }
+
     @RegisterMark
     public static class RegisterImpl implements CommonRegister {
         @Override
         public void register() {
             INetworkRegister.getInstance().autoRegisterPayload(SearchMusicResponse.class, CODEC,
-                    (message, player) -> {}
+                    (message, player) -> {
+                        if (consumer != null) {
+                            consumer.accept(message);
+                        }
+                    }
             );
         }
     }
