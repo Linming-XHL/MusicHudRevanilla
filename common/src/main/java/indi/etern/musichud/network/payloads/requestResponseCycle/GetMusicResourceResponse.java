@@ -36,6 +36,10 @@ public record GetMusicResourceResponse(MusicResourceInfo musicResourceInfo) impl
                     (response, player) -> {
                         long id = response.musicResourceInfo.getId();
                         Consumer<MusicResourceInfo> consumer = consumerMap.remove(id);
+                        if (consumer == null && id == 0 && consumerMap.size() == 1) {
+                            Long pendingId = consumerMap.keySet().iterator().next();
+                            consumer = consumerMap.remove(pendingId);
+                        }
                         if (consumer != null) {
                             consumer.accept(response.musicResourceInfo);
                         } else {

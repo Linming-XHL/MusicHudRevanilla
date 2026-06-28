@@ -360,7 +360,7 @@ public class StreamAudioPlayer {
         MusicResourceInfo musicResourceInfo = MusicResourceInfo.NONE;
         while (!currentDownloadFuture.isDone() && currentDownloadFuture == downloadFuture) {
             try {
-                if (shouldRequestResource || musicResourceInfo == null || musicResourceInfo.equals(MusicResourceInfo.NONE)) {
+                if (shouldRequestResource || isMissingResource(musicResourceInfo)) {
                     LOGGER.debug("Waiting for music resource info...");
                     try {
                         musicResourceInfo = getCurrentMusicResourceInfo(clientConfig.getPrimaryChosenQuality(), musicResourceInfo).get(10, TimeUnit.SECONDS);
@@ -382,7 +382,7 @@ public class StreamAudioPlayer {
                         Thread.sleep(2000);
                         continue;
                     }
-                    if (musicResourceInfo == null || musicResourceInfo.getUrl().isEmpty()) {
+                    if (isMissingResource(musicResourceInfo)) {
                         LOGGER.warn("Got empty music resource info, retrying...");
                         if (!handleDownloadRetry(++localRetryCount, "Got empty music resource info", downloadInitializedFuture, currentDownloadFuture)) {
                             break;
@@ -452,7 +452,6 @@ public class StreamAudioPlayer {
 
                 playedBytes = 0;
                 forceSyncInternal = true;
-                shouldRequestResource = true;
                 if (!handleDownloadRetry(++localRetryCount, e.getClass().getSimpleName() + ": " + e.getMessage(), downloadInitializedFuture, currentDownloadFuture)) {
                     break;
                 }
@@ -489,6 +488,10 @@ public class StreamAudioPlayer {
 
     private void notifyClient(String message) {
         ToastUtil.show(message);
+    }
+
+    private boolean isMissingResource(MusicResourceInfo musicResourceInfo) {
+        return musicResourceInfo == null || musicResourceInfo.getUrl().isEmpty();
     }
 
     private void syncPlaying(CompletableFuture<?> currentDownloadFuture) {
@@ -711,8 +714,7 @@ public class StreamAudioPlayer {
                 future.complete(value);
             }
         });
-        String url = previous == null || previous.getUrl() == null ? "" : previous.getUrl();
-        IClientNetworkService.getInstance().sendToServer(new GetMusicResourceRequest(musicId, quality, url));
+        IClientNetworkService.getInstance().sendToServer(new GetMusicResourceRequest(musicId, quality));
         return future;
     }
 
