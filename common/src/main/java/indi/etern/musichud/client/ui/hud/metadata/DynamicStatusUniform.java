@@ -42,17 +42,33 @@ public class DynamicStatusUniform implements HudUniform {
     }
 
     @Override
+    public boolean shouldUseBuffer(HudUniform lastBuffered) {
+        if (lastBuffered instanceof DynamicStatusUniform other) {
+            // Only update if the values have changed significantly
+            float thisTime = (float) MusicHud.getRunningMillis() / 1000;
+            float otherTime = other.getLastTime();
+            float thisProgress = NOW_PLAYING_INFO.getProgressRate();
+            float otherProgress = other.getLastProgress();
+            return Math.abs(thisTime - otherTime) < 0.05f && Math.abs(thisProgress - otherProgress) < 0.001f;
+        }
+        return false;
+    }
+
+    private float lastTime = 0;
+    private float lastProgress = 0;
+
+    public float getLastTime() { return lastTime; }
+    public float getLastProgress() { return lastProgress; }
+
+    @Override
     public void write(Std140Builder builder) {
+        lastTime = (float) MusicHud.getRunningMillis() / 1000;
+        lastProgress = NOW_PLAYING_INFO.getProgressRate();
         builder.putVec4(
-                (float) MusicHud.getRunningMillis() / 1000,
-                NOW_PLAYING_INFO.getProgressRate(),
+                lastTime,
+                lastProgress,
                 transitionable == null ? 0 : transitionable.getProgress(),
                 0
         );
-    }
-
-    @Override
-    public boolean shouldUseBuffer(HudUniform lastBuffered) {
-        return false;//always update
     }
 }
