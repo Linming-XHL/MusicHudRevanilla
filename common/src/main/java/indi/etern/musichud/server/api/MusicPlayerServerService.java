@@ -432,15 +432,21 @@ public class MusicPlayerServerService {
                     return musicResourceInfo;
                 } catch (Exception e) {
                     logger.error("Failed to get resource info for music: {}", musicDetail.getName(), e);
-                    return MusicResourceInfo.NONE;
+                    MusicResourceInfo none = MusicResourceInfo.NONE;
+                    none.setId(id);
+                    return none;
                 }
             } else if (musicDetails.size() > 1) {
                 throw new IllegalStateException();
             } else {
-                return MusicResourceInfo.NONE;
+                MusicResourceInfo none = MusicResourceInfo.NONE;
+                none.setId(id);
+                return none;
             }
         } catch (Exception e) {
-            return MusicResourceInfo.NONE;
+            MusicResourceInfo none = MusicResourceInfo.NONE;
+            none.setId(id);
+            return none;
         }
     }
 
