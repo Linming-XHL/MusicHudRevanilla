@@ -26,7 +26,7 @@ public class MusicHudScreen extends Screen {
     private final List<String> tabs = new ArrayList<>();
 
     public MusicHudScreen(@Nullable Screen previous) {
-        super(Component.literal("Music HUD"));
+        super(Component.translatable(MusicHud.MOD_ID + ".gui.title"));
         this.previous = previous;
     }
 
@@ -110,84 +110,85 @@ public class MusicHudScreen extends Screen {
             y += 24;
         }
 
-        addRenderableWidget(Button.builder(Component.literal(enabled ? "Disable" : "Enable"), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button." + (enabled ? "disable" : "enable")), button -> {
             CLIENT_CONFIG.setEnable(!enabled);
             CLIENT_CONFIG.save();
             rebuildWidgets();
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal(hudEnabled ? "Hide HUD" : "Show HUD"), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button." + (hudEnabled ? "hideHud" : "showHud")), button -> {
             CLIENT_CONFIG.setEnableHud(!hudEnabled);
             CLIENT_CONFIG.save();
             rebuildWidgets();
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal(muted ? "Unmute (Volume: 0)" : "Mute (Volume: " + volume + ")"), button -> {
+        String muteKey = muted ? MusicHud.MOD_ID + ".gui.button.unmute" : MusicHud.MOD_ID + ".gui.button.mute";
+        addRenderableWidget(Button.builder(Component.translatable(muteKey, volume), button -> {
             CLIENT_CONFIG.setMuted(!muted);
             CLIENT_CONFIG.save();
             rebuildWidgets();
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("Toggle Connection"), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.toggleConnection"), button -> {
             MusicHud.EXECUTOR.execute(LoginService.getInstance()::keyBindsToggleConnection);
         }).bounds(centerX - 100, y, 200, 20).build());
     }
 
     private void addSearchWidgets(int centerX, int y) {
-        addRenderableWidget(Button.builder(Component.literal("Search Music (Network Required)"), button -> {
-            ToastUtil.show("Search requires server connection");
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.searchMusic"), button -> {
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.networkRequired"));
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("Search Artist (Network Required)"), button -> {
-            ToastUtil.show("Search requires server connection");
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.searchArtist"), button -> {
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.networkRequired"));
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("Search Album (Network Required)"), button -> {
-            ToastUtil.show("Search requires server connection");
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.searchAlbum"), button -> {
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.networkRequired"));
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("Search Playlist (Network Required)"), button -> {
-            ToastUtil.show("Search requires server connection");
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.searchPlaylist"), button -> {
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.networkRequired"));
         }).bounds(centerX - 100, y, 200, 20).build());
     }
 
     private void addAccountWidgets(int centerX, int y) {
-        addRenderableWidget(Button.builder(Component.literal("QR Code Login"), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.qrLogin"), button -> {
             LoginService loginService = LoginService.getInstance();
             loginService.loginToServer(LoginService.ConnectionType.EXTERNAL);
-            ToastUtil.show("Connecting to server...");
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.connecting"));
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("Anonymous Login"), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.anonymousLogin"), button -> {
             LoginService loginService = LoginService.getInstance();
             loginService.loginToServer(LoginService.ConnectionType.EXTERNAL);
-            ToastUtil.show("Logging in as anonymous...");
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.loggingIn"));
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("Logout"), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.logout"), button -> {
             LoginService loginService = LoginService.getInstance();
             loginService.logout();
-            ToastUtil.show("Logged out");
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.loggedOut"));
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("Disconnect"), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.disconnect"), button -> {
             LoginService loginService = LoginService.getInstance();
             loginService.disconnectToExternalOrIntegratedServer();
-            ToastUtil.show("Disconnected");
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.disconnected"));
         }).bounds(centerX - 100, y, 200, 20).build());
     }
 
     private void addSettingsWidgets(int centerX, int y) {
-        addRenderableWidget(Button.builder(Component.literal("HUD Offset X: " + CLIENT_CONFIG.getHudOffsetX()), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.hudOffsetX", CLIENT_CONFIG.getHudOffsetX()), button -> {
             CLIENT_CONFIG.setHudOffsetX(CLIENT_CONFIG.getHudOffsetX() + 1);
             CLIENT_CONFIG.save();
             rebuildWidgets();
@@ -199,7 +200,7 @@ public class MusicHudScreen extends Screen {
         }).bounds(centerX + 2, y, 98, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("HUD Offset Y: " + CLIENT_CONFIG.getHudOffsetY()), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.hudOffsetY", CLIENT_CONFIG.getHudOffsetY()), button -> {
             CLIENT_CONFIG.setHudOffsetY(CLIENT_CONFIG.getHudOffsetY() + 1);
             CLIENT_CONFIG.save();
             rebuildWidgets();
@@ -211,7 +212,7 @@ public class MusicHudScreen extends Screen {
         }).bounds(centerX + 2, y, 98, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("HUD Width: " + CLIENT_CONFIG.getHudWidth()), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.hudWidth", CLIENT_CONFIG.getHudWidth()), button -> {
             CLIENT_CONFIG.setHudWidth(CLIENT_CONFIG.getHudWidth() + 1);
             CLIENT_CONFIG.save();
             rebuildWidgets();
@@ -223,7 +224,7 @@ public class MusicHudScreen extends Screen {
         }).bounds(centerX + 2, y, 98, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("HUD Height: " + CLIENT_CONFIG.getHudHeight()), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.hudHeight", CLIENT_CONFIG.getHudHeight()), button -> {
             CLIENT_CONFIG.setHudHeight(CLIENT_CONFIG.getHudHeight() + 1);
             CLIENT_CONFIG.save();
             rebuildWidgets();
@@ -235,7 +236,7 @@ public class MusicHudScreen extends Screen {
         }).bounds(centerX + 2, y, 98, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("HUD Corner Radius: " + CLIENT_CONFIG.getHudCornerRadius()), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.hudCornerRadius", CLIENT_CONFIG.getHudCornerRadius()), button -> {
             CLIENT_CONFIG.setHudCornerRadius(CLIENT_CONFIG.getHudCornerRadius() + 1);
             CLIENT_CONFIG.save();
             rebuildWidgets();
@@ -247,7 +248,7 @@ public class MusicHudScreen extends Screen {
         }).bounds(centerX + 2, y, 98, 20).build());
         y += 24;
 
-        addRenderableWidget(Button.builder(Component.literal("Volume Interval: " + CLIENT_CONFIG.getSoundVolumeInterval()), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.volumeInterval", CLIENT_CONFIG.getSoundVolumeInterval()), button -> {
             CLIENT_CONFIG.setSoundVolumeInterval(CLIENT_CONFIG.getSoundVolumeInterval() + 1);
             CLIENT_CONFIG.save();
             rebuildWidgets();
@@ -260,7 +261,7 @@ public class MusicHudScreen extends Screen {
         y += 24;
 
         boolean marquee = CLIENT_CONFIG.getEnableMarqueeText();
-        addRenderableWidget(Button.builder(Component.literal("Marquee Text: " + (marquee ? "ON" : "OFF")), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.marqueeText", I18n.get(MusicHud.MOD_ID + ".gui.value." + (marquee ? "on" : "off"))), button -> {
             CLIENT_CONFIG.setEnableMarqueeText(!marquee);
             CLIENT_CONFIG.save();
             rebuildWidgets();
@@ -268,7 +269,7 @@ public class MusicHudScreen extends Screen {
         y += 24;
 
         boolean translated = CLIENT_CONFIG.getShowTranslatedCnLyrics();
-        addRenderableWidget(Button.builder(Component.literal("Show Translated Lyrics: " + (translated ? "ON" : "OFF")), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.showTranslatedLyrics", I18n.get(MusicHud.MOD_ID + ".gui.value." + (translated ? "on" : "off"))), button -> {
             CLIENT_CONFIG.setShowTranslatedCnLyrics(!translated);
             CLIENT_CONFIG.save();
             rebuildWidgets();
@@ -276,7 +277,7 @@ public class MusicHudScreen extends Screen {
         y += 24;
 
         boolean isolated = CLIENT_CONFIG.getEnableIsolatedMode();
-        addRenderableWidget(Button.builder(Component.literal("Isolated Mode: " + (isolated ? "ON" : "OFF")), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.isolatedMode", I18n.get(MusicHud.MOD_ID + ".gui.value." + (isolated ? "on" : "off"))), button -> {
             CLIENT_CONFIG.setEnableIsolatedMode(!isolated);
             CLIENT_CONFIG.save();
             rebuildWidgets();
@@ -284,7 +285,7 @@ public class MusicHudScreen extends Screen {
         y += 24;
 
         boolean autoConnect = CLIENT_CONFIG.getEnableAutoConnect();
-        addRenderableWidget(Button.builder(Component.literal("Auto Connect: " + (autoConnect ? "ON" : "OFF")), button -> {
+        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.autoConnect", I18n.get(MusicHud.MOD_ID + ".gui.value." + (autoConnect ? "on" : "off"))), button -> {
             CLIENT_CONFIG.setEnableAutoConnect(!autoConnect);
             CLIENT_CONFIG.save();
             rebuildWidgets();
@@ -308,10 +309,10 @@ public class MusicHudScreen extends Screen {
         String musicName = music == null || music == MusicDetail.NONE
                 ? I18n.get(MusicHud.MOD_ID + ".text.idle")
                 : music.getName();
-        String statusText = "Now Playing: " + musicName;
+        String statusText = I18n.get(MusicHud.MOD_ID + ".gui.text.nowPlaying") + ": " + musicName;
         graphics.text(font, statusText, centerX - font.width(statusText) / 2, height - 40, 0xFFA0A0A0, false);
 
-        String connectText = "Status: " + MusicHud.getConnectStatus();
+        String connectText = I18n.get(MusicHud.MOD_ID + ".gui.text.status") + ": " + MusicHud.getConnectStatus();
         graphics.text(font, connectText, centerX - font.width(connectText) / 2, height - 55, 0xFFA0A0A0, false);
     }
 
