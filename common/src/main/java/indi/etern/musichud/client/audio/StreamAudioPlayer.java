@@ -648,6 +648,7 @@ public class StreamAudioPlayer {
             if (value == MusicResourceInfo.NONE) {
                 MusicService.getInstance().switchMusic(MusicDetail.NONE, MusicDetail.NONE, null, I18n.get(MusicHud.MOD_ID + ".text.failedToLoadMusicResource"));
                 setStatus(Status.ERROR);
+                future.completeExceptionally(new IOException("Music resource is NONE"));
             } else {
                 future.complete(value);
             }

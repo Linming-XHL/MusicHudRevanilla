@@ -19,7 +19,6 @@ jobs:
         loader:
           - fabric
           - neoforge
-          - paper
 
     steps:
       - name: Checkout
