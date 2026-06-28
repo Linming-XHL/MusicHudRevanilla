@@ -13,13 +13,15 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
-public record GetMusicResourceRequest(long id, Quality quality) implements C2SPayload {
+public record GetMusicResourceRequest(long id, Quality quality, String retryForUrl) implements C2SPayload {
     public static final StreamCodec<RegistryFriendlyByteBuf, GetMusicResourceRequest> CODEC =
             StreamCodec.composite(
                     ByteBufCodecs.LONG,
                     GetMusicResourceRequest::id,
                     Codecs.ofEnum(Quality.class),
                     GetMusicResourceRequest::quality,
+                    ByteBufCodecs.STRING_UTF8,
+                    GetMusicResourceRequest::retryForUrl,
                     GetMusicResourceRequest::new
             );
 
@@ -29,7 +31,7 @@ public record GetMusicResourceRequest(long id, Quality quality) implements C2SPa
             INetworkRegister.getInstance().autoRegisterPayload(
                 GetMusicResourceRequest.class, CODEC,
                 ServerDataPacketVThreadExecutor.execute((request, player) -> {
-                    var currentMusicResourceInfo = MusicPlayerServerService.getInstance().getMusicResourceInfo(request.id, request.quality, "", player);
+                    var currentMusicResourceInfo = MusicPlayerServerService.getInstance().getMusicResourceInfo(request.id, request.quality, request.retryForUrl, player);
                     IServerNetworkService.getInstance().sendToPlayer(player, new GetMusicResourceResponse(currentMusicResourceInfo));
                 })
             );

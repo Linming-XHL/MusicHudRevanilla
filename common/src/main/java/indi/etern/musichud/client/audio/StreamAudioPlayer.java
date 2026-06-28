@@ -452,6 +452,7 @@ public class StreamAudioPlayer {
 
                 playedBytes = 0;
                 forceSyncInternal = true;
+                shouldRequestResource = true;
                 if (!handleDownloadRetry(++localRetryCount, e.getClass().getSimpleName() + ": " + e.getMessage(), downloadInitializedFuture, currentDownloadFuture)) {
                     break;
                 }
@@ -714,7 +715,8 @@ public class StreamAudioPlayer {
                 future.complete(value);
             }
         });
-        IClientNetworkService.getInstance().sendToServer(new GetMusicResourceRequest(musicId, quality));
+        String url = previous == null || previous.getUrl() == null ? "" : previous.getUrl();
+        IClientNetworkService.getInstance().sendToServer(new GetMusicResourceRequest(musicId, quality, url));
         return future;
     }
 
