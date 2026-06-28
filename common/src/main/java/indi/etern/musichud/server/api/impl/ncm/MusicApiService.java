@@ -308,6 +308,15 @@ public class MusicApiService implements IMusicApiService {
                         musicResourceInfo = MusicResourceInfo.NONE;
                     }
                 }
+                // Replace inaccessible CDN URLs
+                if (musicResourceInfo != null && musicResourceInfo.getUrl() != null) {
+                    String url = musicResourceInfo.getUrl();
+                    if (url.contains("p4.music.126.net") || url.contains("p3.music.126.net") || url.contains("p2.music.126.net")) {
+                        String newUrl = url.replaceAll("p[234]\\.music\\.126\\.net", "m801.music.126.net");
+                        logger.info("Replacing CDN URL: {} -> {}", url, newUrl);
+                        musicResourceInfo.setUrl(newUrl);
+                    }
+                }
                 available = ApiClient.checkUrlAvailable(musicResourceInfo.getUrl(), 10000);
                 retryCount++;
             } while (!available);
