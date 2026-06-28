@@ -8,8 +8,8 @@ import indi.etern.musichud.network.payloads.S2CPayload;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public record GetMusicResourceResponse(MusicResourceInfo musicResourceInfo) implements S2CPayload {
@@ -20,12 +20,12 @@ public record GetMusicResourceResponse(MusicResourceInfo musicResourceInfo) impl
                     GetMusicResourceResponse::new
             );
 
-    static final Map<Long, Consumer<MusicResourceInfo>> consumerMap = new HashMap<>();
+    static final Map<Long, Consumer<MusicResourceInfo>> consumerMap = new ConcurrentHashMap<>();
     public static void setReceiver(long id, Consumer<MusicResourceInfo> consumer) {
-        if (consumerMap.containsKey(id)) {
-            consumerMap.get(id).accept(null);
+        Consumer<MusicResourceInfo> previous = consumerMap.put(id, consumer);
+        if (previous != null) {
+            previous.accept(null);
         }
-        GetMusicResourceResponse.consumerMap.put(id, consumer);
     }
 
     @RegisterMark
@@ -34,9 +34,13 @@ public record GetMusicResourceResponse(MusicResourceInfo musicResourceInfo) impl
             INetworkRegister.getInstance().autoRegisterPayload(
                     GetMusicResourceResponse.class, CODEC,
                     (response, player) -> {
-                        Consumer<MusicResourceInfo> consumer = consumerMap.remove(response.musicResourceInfo.getId());
+                        long id = response.musicResourceInfo.getId();
+                        Consumer<MusicResourceInfo> consumer = consumerMap.remove(id);
                         if (consumer != null) {
                             consumer.accept(response.musicResourceInfo);
+                        } else {
+                            // Log if no consumer found
+                            org.apache.logging.log4j.LogManager.getLogger("MusicHud").warn("No consumer found for music resource response id={}", id);
                         }
                     }
             );

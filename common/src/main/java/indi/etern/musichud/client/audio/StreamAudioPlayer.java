@@ -357,10 +357,29 @@ public class StreamAudioPlayer {
         while (!currentDownloadFuture.isDone() && currentDownloadFuture == downloadFuture) {
             try {
                 if (musicResourceInfo == null || musicResourceInfo.equals(MusicResourceInfo.NONE) || localRetryCount % 3 == 0) {
-                    musicResourceInfo = getCurrentMusicResourceInfo(clientConfig.getPrimaryChosenQuality(), musicResourceInfo).get();
-                    if (musicResourceInfo == null) {
+                    LOGGER.debug("Waiting for music resource info...");
+                    try {
+                        musicResourceInfo = getCurrentMusicResourceInfo(clientConfig.getPrimaryChosenQuality(), musicResourceInfo).get(10, TimeUnit.SECONDS);
+                    } catch (TimeoutException e) {
+                        LOGGER.warn("Timeout waiting for music resource info");
+                        localRetryCount++;
+                        setStatus(Status.RETRYING);
+                        continue;
+                    } catch (ExecutionException e) {
+                        LOGGER.error("Failed to get music resource info: {}", e.getCause().getMessage());
+                        localRetryCount++;
+                        setStatus(Status.RETRYING);
+                        Thread.sleep(2000);
                         continue;
                     }
+                    if (musicResourceInfo == null || musicResourceInfo.getUrl().isEmpty()) {
+                        LOGGER.warn("Got empty music resource info, retrying...");
+                        localRetryCount++;
+                        setStatus(Status.RETRYING);
+                        Thread.sleep(1000);
+                        continue;
+                    }
+                    LOGGER.debug("Got music resource info: url={}", musicResourceInfo.getUrl());
                 }
 
                 LOGGER.debug("Starting audio download (attempt {})", localRetryCount + 1);
@@ -644,17 +663,24 @@ public class StreamAudioPlayer {
 
     public CompletableFuture<MusicResourceInfo> getCurrentMusicResourceInfo(Quality quality, MusicResourceInfo previous) {
         CompletableFuture<MusicResourceInfo> future = new CompletableFuture<>();
-        GetMusicResourceResponse.setReceiver(currentMusicDetail.getId(), value -> {
-            if (value == MusicResourceInfo.NONE) {
+        long musicId = currentMusicDetail.getId();
+        LOGGER.debug("Requesting music resource for id={}, quality={}, previousUrl={}", musicId, quality, previous == null ? "null" : previous.getUrl());
+        GetMusicResourceResponse.setReceiver(musicId, value -> {
+            if (value == null) {
+                LOGGER.warn("Received null music resource for id={}", musicId);
+                future.completeExceptionally(new IOException("Music resource is null"));
+            } else if (value == MusicResourceInfo.NONE) {
+                LOGGER.warn("Received NONE music resource for id={}", musicId);
                 MusicService.getInstance().switchMusic(MusicDetail.NONE, MusicDetail.NONE, null, I18n.get(MusicHud.MOD_ID + ".text.failedToLoadMusicResource"));
                 setStatus(Status.ERROR);
                 future.completeExceptionally(new IOException("Music resource is NONE"));
             } else {
+                LOGGER.debug("Received music resource for id={}, url={}", musicId, value.getUrl());
                 future.complete(value);
             }
         });
         String url = previous == null || previous.getUrl() == null ? "" : previous.getUrl();
-        IClientNetworkService.getInstance().sendToServer(new GetMusicResourceRequest(currentMusicDetail.getId(), quality, url));
+        IClientNetworkService.getInstance().sendToServer(new GetMusicResourceRequest(musicId, quality, url));
         return future;
     }
 
