@@ -1,22 +1,17 @@
 package indi.etern.musichud.client.ui.hud.renderer;
 
-import icyllis.modernui.mc.text.ModernStringSplitter;
-import icyllis.modernui.mc.text.TextLayoutEngine;
-import indi.etern.musichud.MusicHud;
 import indi.etern.musichud.client.ui.hud.metadata.Layout;
 import indi.etern.musichud.client.ui.utils.Easing;
 import indi.etern.musichud.interfaces.ClientConfig;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Style;
 
 @Getter
 @Setter
 public class TextRenderer implements HudRenderer {
     private static final ClientConfig clientConfig = ClientConfig.getInstance();
     private int vanillaLineHeight = -1;
-    private ModernStringSplitter modernStringSplitter = null;
     private TextStyle currentTextData;
     private Layout layout;
     private int baseColor;
@@ -30,14 +25,6 @@ public class TextRenderer implements HudRenderer {
     private float transitionSpeed = 4.0f;
     private long lastUpdateTime = System.currentTimeMillis();
     private float marqueeDuration = 10000;
-
-    public TextRenderer() {
-        try {
-            modernStringSplitter = TextLayoutEngine.getInstance().getStringSplitter();
-        } catch (Throwable t) {
-            MusicHud.getLogger(TextRenderer.class).debug("ModernTextEngine is disabled", t);
-        }
-    }
 
     public void configure(Layout layout, int baseColor, Position position) {
         this.layout = layout;
@@ -216,24 +203,7 @@ public class TextRenderer implements HudRenderer {
         }
     }
 
-    private ModernStringSplitter tryGetSplitter() {
-        try {
-            return TextLayoutEngine.getInstance().getStringSplitter();
-        } catch (Throwable t) {
-            return null;
-        }
-    }
-
     private String trimToWidth(String text, float maxWidth) {
-        if (modernStringSplitter != null) {
-            int maxIndex = modernStringSplitter.indexByWidth(text, maxWidth, Style.EMPTY);
-            String trimmed = text.substring(0, maxIndex);
-            if (maxIndex < text.length()) {
-                trimmed = addEllipsis(trimmed);
-            }
-            return trimmed;
-        }
-
         return trimWithVanilla(text, maxWidth);
     }
 
@@ -269,10 +239,6 @@ public class TextRenderer implements HudRenderer {
     }
 
     private float measureWidth(String text) {
-        ModernStringSplitter splitter = tryGetSplitter();
-        if (splitter != null) {
-            return splitter.measureText(text);
-        }
         return Minecraft.getInstance().font.width(text);
     }
 

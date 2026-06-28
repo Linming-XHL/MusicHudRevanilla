@@ -2,10 +2,6 @@ package indi.etern.musichud.client.services;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import icyllis.modernui.core.Context;
-import icyllis.modernui.mc.MuiModApi;
-import icyllis.modernui.mc.UIManager;
-import icyllis.modernui.widget.Toast;
 import indi.etern.musichud.MusicHud;
 import indi.etern.musichud.beans.api.IdlePlaySource;
 import indi.etern.musichud.beans.music.*;
@@ -250,11 +246,7 @@ public class MusicService {
     public synchronized void switchMusic(MusicDetail musicDetail, MusicDetail nextIdleMusicDetail, ZonedDateTime serverStartTime, String message) {
         if (clientConfig.getEnable()) {
             if (!message.isEmpty()) {
-                MuiModApi.postToUiThread(() -> {
-                    //noinspection UnstableApiUsage
-                    Context context = UIManager.getInstance().getDecorView().getContext();
-                    ToastUtil.show(Toast.makeText(context, message, Toast.LENGTH_SHORT));
-                });
+                ToastUtil.show(message);
             }
             NowPlayingInfo nowPlayingInfo = NowPlayingInfo.getInstance();
             if (!musicDetail.equals(MusicDetail.NONE)) {
@@ -302,18 +294,10 @@ public class MusicService {
             if (currentTimeMillis - lastPressTime <= 3000) {
                 lastPressTime = 0;
                 voteForSkipCurrent();
-                MuiModApi.postToUiThread(() -> {
-                    //noinspection UnstableApiUsage
-                    Context context = UIManager.getInstance().getDecorView().getContext();
-                    ToastUtil.show(Toast.makeText(context, I18n.get(MusicHud.MOD_ID + ".text.voteForSkipConfirmed"), Toast.LENGTH_SHORT));
-                });
+                ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.voteForSkipConfirmed"));
             } else {
                 lastPressTime = currentTimeMillis;
-                MuiModApi.postToUiThread(() -> {
-                    //noinspection UnstableApiUsage
-                    Context context = UIManager.getInstance().getDecorView().getContext();
-                    ToastUtil.show(Toast.makeText(context, I18n.get(MusicHud.MOD_ID + ".text.confirmVoteForSkip"), Toast.LENGTH_SHORT));
-                });
+                ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.confirmVoteForSkip"));
             }
         }
     }

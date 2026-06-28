@@ -1,8 +1,6 @@
 package indi.etern.musichud.network.payloads.requestResponseCycle;
 
-import icyllis.modernui.mc.MuiModApi;
 import indi.etern.musichud.beans.music.Playlist;
-import indi.etern.musichud.client.ui.pages.search.SearchView;
 import indi.etern.musichud.interfaces.CommonRegister;
 import indi.etern.musichud.interfaces.RegisterMark;
 import indi.etern.musichud.network.Codecs;
@@ -28,11 +26,7 @@ public record SearchPlaylistsResponse(int offset,List<Playlist> result) implemen
         @Override
         public void register() {
             INetworkRegister.getInstance().autoRegisterPayload(SearchPlaylistsResponse.class, CODEC,
-                    (message, player) -> {
-                        MuiModApi.postToUiThread(() -> {
-                            SearchView.getInstance().setSearchPlaylistResult(message.offset, message.result());
-                        });
-                    }
+                    (message, player) -> {}
             );
         }
     }

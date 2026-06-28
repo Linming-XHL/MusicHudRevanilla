@@ -1,9 +1,5 @@
 package indi.etern.musichud.client.ui.hud.renderer;
 
-import icyllis.modernui.mc.FontResourceManager;
-import icyllis.modernui.mc.text.ModernStringSplitter;
-import icyllis.modernui.mc.text.TextLayoutEngine;
-import indi.etern.musichud.MusicHud;
 import indi.etern.musichud.beans.music.LyricLine;
 import indi.etern.musichud.client.audio.NowPlayingInfo;
 import indi.etern.musichud.client.ui.hud.metadata.Layout;
@@ -12,7 +8,6 @@ import indi.etern.musichud.interfaces.ClientConfig;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
@@ -25,7 +20,6 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
     private final LineState nextLine2;
     private final NowPlayingInfo nowPlayingInfo = NowPlayingInfo.getInstance();
     private static final ClientConfig clientConfig = ClientConfig.getInstance();
-    ModernStringSplitter modernStringSplitter;
     @Setter
     private float line1Height;
     @Setter
@@ -41,18 +35,6 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
     private int lineSpacing = 0;
 
     public ScrollingLyricLineRenderer() {
-        FontResourceManager fontResourceManager = FontResourceManager.getInstance();
-        Logger logger = MusicHud.getLogger(ScrollingLyricLineRenderer.class);
-        if (fontResourceManager instanceof TextLayoutEngine layoutEngine) {
-            try {
-                modernStringSplitter = layoutEngine.getStringSplitter();
-            } catch (Throwable t) {
-                logger.debug("ModernTextEngine is disabled", t);
-            }
-        } else {
-            logger.debug("ModernTextEngine is disabled");
-        }
-
         currentLine1 = new LineState();
         currentLine2 = new LineState();
         nextLine1 = new LineState();
@@ -154,18 +136,8 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
 
     private float calcTextWidth(String text, float lineHeight) {
         if (text == null || text.isEmpty()) return 0;
-        float rawWidth;
         Font font = Minecraft.getInstance().font;
-        if (modernStringSplitter != null) {
-            try {
-                rawWidth = modernStringSplitter.stringWidth(text);
-            } catch (Throwable e) {
-                modernStringSplitter = null;//fallback
-                rawWidth = font.width(text);
-            }
-        } else {
-            rawWidth = font.width(text);
-        }
+        float rawWidth = font.width(text);
         return rawWidth * lineHeight / font.lineHeight;
     }
 

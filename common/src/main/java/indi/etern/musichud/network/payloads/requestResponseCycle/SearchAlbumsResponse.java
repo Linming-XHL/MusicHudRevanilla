@@ -1,8 +1,6 @@
 package indi.etern.musichud.network.payloads.requestResponseCycle;
 
-import icyllis.modernui.mc.MuiModApi;
 import indi.etern.musichud.beans.music.Album;
-import indi.etern.musichud.client.ui.pages.search.SearchView;
 import indi.etern.musichud.interfaces.CommonRegister;
 import indi.etern.musichud.interfaces.RegisterMark;
 import indi.etern.musichud.network.Codecs;
@@ -28,11 +26,7 @@ public record SearchAlbumsResponse(int offset,List<Album> result) implements S2C
         @Override
         public void register() {
             INetworkRegister.getInstance().autoRegisterPayload(SearchAlbumsResponse.class, CODEC,
-                    (message, player) -> {
-                        MuiModApi.postToUiThread(() -> {
-                            SearchView.getInstance().setSearchAlbumResult(message.offset,message.result());
-                        });
-                    }
+                    (message, player) -> {}
             );
         }
     }

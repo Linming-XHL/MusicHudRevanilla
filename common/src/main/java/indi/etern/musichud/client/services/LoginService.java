@@ -1,9 +1,5 @@
 package indi.etern.musichud.client.services;
 
-import icyllis.modernui.core.Context;
-import icyllis.modernui.mc.MuiModApi;
-import icyllis.modernui.mc.UIManager;
-import icyllis.modernui.widget.Toast;
 import indi.etern.musichud.MusicHud;
 import indi.etern.musichud.Version;
 import indi.etern.musichud.beans.api.AutoConnectServerFilterType;
@@ -14,9 +10,6 @@ import indi.etern.musichud.client.audio.NowPlayingInfo;
 import indi.etern.musichud.client.audio.StreamAudioPlayer;
 import indi.etern.musichud.client.config.ProfileConfigData;
 import indi.etern.musichud.client.ui.ToastUtil;
-import indi.etern.musichud.client.ui.pages.account.AccountBaseView;
-import indi.etern.musichud.client.ui.pages.account.AccountView;
-import indi.etern.musichud.client.ui.pages.account.LoginView;
 import indi.etern.musichud.interfaces.ClientConfig;
 import indi.etern.musichud.interfaces.ClientRegister;
 import indi.etern.musichud.interfaces.IClientEventService;
@@ -70,36 +63,16 @@ public class LoginService {
             } else {
                 logger.warn("Login failed");
             }
-            AccountBaseView accountBaseView = AccountBaseView.getInstance();
-            if (accountBaseView != null) {
-                MuiModApi.postToUiThread(accountBaseView::refresh);
-                if (loginResult.success()) {
-                    ProfileConfigData profileConfigData = ProfileConfigData.getInstance();
-                    profileConfigData.setProfile(loginResult.profile());
-                    profileConfigData.saveToConfig();
-                    MuiModApi.postToUiThread(() -> {
-                        AccountView accountView = AccountView.getInstance();
-                        if (accountView != null) {
-                            accountView.refresh();
-                        }
-                    });
-                } else {
-                    MuiModApi.postToUiThread(() -> {
-                        AccountView accountView = AccountView.getInstance();
-                        if (accountView != null) {
-                            accountView.refresh();
-                        }
-                        LoginView loginView = LoginView.getInstance();
-                        if (loginView != null) {
-                            loginView.reset();
-                            String message = loginResult.message();
-                            if (message.startsWith(MusicHud.MOD_ID)) {
-                                message = I18n.get(message);
-                            }
-                            loginView.errorText(message);
-                        }
-                    });
+            if (loginResult.success()) {
+                ProfileConfigData profileConfigData = ProfileConfigData.getInstance();
+                profileConfigData.setProfile(loginResult.profile());
+                profileConfigData.saveToConfig();
+            } else {
+                String message = loginResult.message();
+                if (message.startsWith(MusicHud.MOD_ID)) {
+                    message = I18n.get(message);
                 }
+                ToastUtil.show(message);
             }
         });
     };
@@ -238,30 +211,14 @@ public class LoginService {
                 lastPressTime = 0;
                 Boolean connected = toggleConnection();
                 if (connected != null) {
-                    MuiModApi.postToUiThread(() -> {
-                        //noinspection UnstableApiUsage
-                        Context context = UIManager.getInstance().getDecorView().getContext();
-                        if (connected) {
-                            ToastUtil.show(Toast.makeText(context, I18n.get(MusicHud.MOD_ID + ".text.disconnecting"), Toast.LENGTH_SHORT));
-                        } else {
-                            ToastUtil.show(Toast.makeText(context, I18n.get(MusicHud.MOD_ID + ".text.connecting"), Toast.LENGTH_SHORT));
-                        }
-                    });
+                    ToastUtil.show(I18n.get(MusicHud.MOD_ID + (connected ? ".text.disconnecting" : ".text.connecting")));
                 }
             } else {
                 lastPressTime = currentTimeMillis;
-                MuiModApi.postToUiThread(() -> {
-                    //noinspection UnstableApiUsage
-                    Context context = UIManager.getInstance().getDecorView().getContext();
-                    ToastUtil.show(Toast.makeText(context, I18n.get(MusicHud.MOD_ID + ".text.confirmSwitchConnection"), Toast.LENGTH_SHORT));
-                });
+                ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.confirmSwitchConnection"));
             }
         } else {
-            MuiModApi.postToUiThread(() -> {
-                //noinspection UnstableApiUsage
-                Context context = UIManager.getInstance().getDecorView().getContext();
-                ToastUtil.show(Toast.makeText(context, I18n.get(MusicHud.MOD_ID + ".text.switchConnectionUnavailableInIntegratedServer"), Toast.LENGTH_SHORT));
-            });
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.switchConnectionUnavailableInIntegratedServer"));
         }
     }
 

@@ -13,6 +13,13 @@ sourceSets {
     main {
         java {
             srcDir project(':common').file('src/main/java')
+            exclude 'indi/etern/musichud/client/ui/components/**'
+            exclude 'indi/etern/musichud/client/ui/pages/**'
+            exclude 'indi/etern/musichud/client/ui/screen/MainFragment.java'
+            exclude 'indi/etern/musichud/client/ui/utils/ButtonInsetBackgroundFactory.java'
+            exclude 'indi/etern/musichud/client/ui/utils/EasingInterpolator.java'
+            exclude 'indi/etern/musichud/client/ui/utils/SpringInterpolator.java'
+            exclude 'indi/etern/musichud/mixin/SpanSetMixin.java'
         }
         resources {
             srcDir project(':common').file('src/main/resources')

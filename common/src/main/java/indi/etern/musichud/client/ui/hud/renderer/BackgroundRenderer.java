@@ -1,6 +1,5 @@
 package indi.etern.musichud.client.ui.hud.renderer;
 
-import icyllis.modernui.mc.ModernUIMod;
 import indi.etern.musichud.client.ui.hud.metadata.DynamicStatusUniform;
 import indi.etern.musichud.client.ui.hud.metadata.HudRenderData;
 import indi.etern.musichud.client.ui.hud.metadata.Layout;
@@ -70,10 +69,6 @@ public class BackgroundRenderer implements HudRenderer {
                 currentData.getTransitionableBackground().getMixed(),
                 dynamicStatusUniform
         );
-
-        if (ModernUIMod.isDeveloperMode()) {
-            drawColorDebug(hudRenderContext, currentData.getTransitionableBackground().getMixed().color());
-        }
 
         hudRenderContext.submitHudRenderState(hudRenderState);
         hudRenderContext.nextStratum();
