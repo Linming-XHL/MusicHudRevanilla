@@ -109,13 +109,19 @@ public class ImageUtils {
     }
 
     private static <R> R downloadImage(String url, Function<InputStream, R> streamProcessor) throws IOException {
+        // Replace inaccessible CDN URLs
+        if (url.contains("p4.music.126.net") || url.contains("p3.music.126.net") || url.contains("p2.music.126.net")) {
+            String newUrl = url.replaceAll("p[234]\\.music\\.126\\.net", "m801.music.126.net");
+            LOGGER.info("Replacing image CDN URL: {} -> {}", url, newUrl);
+            url = newUrl;
+        }
         HttpURLConnection connection = null;
         try {
             URL imageUrl = URI.create(url).toURL();
             connection = (HttpURLConnection) imageUrl.openConnection();
             connection.setRequestMethod("GET");
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
+            connection.setConnectTimeout(30000);
+            connection.setReadTimeout(30000);
             int responseCode = connection.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 throw new IOException("HTTP error code: " + responseCode);

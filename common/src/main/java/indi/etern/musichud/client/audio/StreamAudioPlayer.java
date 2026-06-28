@@ -75,10 +75,17 @@ public class StreamAudioPlayer {
     }
 
     private static AudioDecoder loadAudioDecoder(String urlString, FormatType formatType) throws URISyntaxException, IOException {
+        // Replace inaccessible CDN URLs
+        if (urlString.contains("p4.music.126.net") || urlString.contains("p3.music.126.net") || urlString.contains("p2.music.126.net")) {
+            String newUrl = urlString.replaceAll("p[234]\\.music\\.126\\.net", "m801.music.126.net");
+            LOGGER.info("Replacing audio CDN URL: {} -> {}", urlString, newUrl);
+            urlString = newUrl;
+        }
+        LOGGER.info("Loading audio from: {}", urlString);
         URL url = new URI(urlString).toURL();
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(10000);
+        connection.setConnectTimeout(30000);
+        connection.setReadTimeout(30000);
         InputStream inputStream = connection.getInputStream();
         BufferedInputStream bufferedStream = new BufferedInputStream(inputStream, 8192);
 
