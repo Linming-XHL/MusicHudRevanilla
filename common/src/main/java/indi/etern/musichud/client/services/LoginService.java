@@ -2,7 +2,6 @@ package indi.etern.musichud.client.services;
 
 import indi.etern.musichud.MusicHud;
 import indi.etern.musichud.Version;
-import indi.etern.musichud.beans.api.AutoConnectServerFilterType;
 import indi.etern.musichud.beans.login.LoginCookieInfo;
 import indi.etern.musichud.beans.login.LoginType;
 import indi.etern.musichud.beans.user.Profile;
@@ -36,9 +35,10 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 
 public class LoginService {
+    private static final int AUTO_CONNECT_MAX_RETRIES = 2;
+    private static final long AUTO_CONNECT_RESPONSE_TIMEOUT_MS = 3000;
     private static final IClientNetworkService clientNetworkService = IClientNetworkService.getInstance();
     private static final ClientConfig clientConfig = ClientConfig.getInstance();
     private static final Logger logger = MusicHud.getLogger(LoginService.class);
@@ -128,6 +128,61 @@ public class LoginService {
     public void connectToExternalServer() {
         if (clientConfig.getEnable()) {
             clientNetworkService.sendToServer(new ConnectRequest(Version.current));
+        }
+    }
+
+    private void autoConnectToExternalServerWithRetry(ServerData serverData) {
+        if (!clientConfig.getEnable()) {
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.autoConnectFailed"));
+            return;
+        }
+        MusicHud.EXECUTOR.submit(() -> {
+            Thread.currentThread().setName("MHWorker-AutoConnect");
+            for (int attempt = 0; attempt <= AUTO_CONNECT_MAX_RETRIES; attempt++) {
+                if (!isSameMultiplayerServer(serverData)) {
+                    return;
+                }
+                if (MusicHud.getConnectStatus() == MusicHud.ConnectStatus.CONNECTED) {
+                    ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.autoConnectSucceeded"));
+                    return;
+                }
+                if (attempt == 0) {
+                    ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.autoConnecting"));
+                } else {
+                    ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.autoConnectRetrying").replace("{}", String.valueOf(attempt)));
+                }
+                connectToExternalServer();
+                waitForConnectResponse();
+            }
+            if (MusicHud.getConnectStatus() == MusicHud.ConnectStatus.CONNECTED) {
+                ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.autoConnectSucceeded"));
+                return;
+            }
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.autoConnectFailed"));
+            if (clientConfig.getEnableIsolatedMode() && isSameMultiplayerServer(serverData)) {
+                launchIsolated();
+            }
+        });
+    }
+
+    private boolean isSameMultiplayerServer(ServerData serverData) {
+        ServerData currentServer = Minecraft.getInstance().getCurrentServer();
+        return currentServer != null && currentServer.ip.equals(serverData.ip);
+    }
+
+    private void waitForConnectResponse() {
+        long deadline = System.currentTimeMillis() + AUTO_CONNECT_RESPONSE_TIMEOUT_MS;
+        while (System.currentTimeMillis() < deadline) {
+            MusicHud.ConnectStatus connectStatus = MusicHud.getConnectStatus();
+            if (connectStatus == MusicHud.ConnectStatus.CONNECTED || connectStatus == MusicHud.ConnectStatus.INCOMPATIBLE) {
+                return;
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
     }
 
@@ -232,20 +287,7 @@ public class LoginService {
             eventService.registerClientPlayerJoin((player) -> {
                 ServerData currentServer = Minecraft.getInstance().getCurrentServer();
                 if (currentServer != null) {
-                    boolean autoConnectToServer = clientConfig.getEnableAutoConnect();
-                    if (autoConnectToServer) {
-                        AutoConnectServerFilterType connectServerFilterType = clientConfig.getConnectServerFilterType();
-                        if ((connectServerFilterType == AutoConnectServerFilterType.BLACK_LIST
-                                && clientConfig.getBlackList().stream().noneMatch(i -> Pattern.matches(i, currentServer.ip)))
-                                || (connectServerFilterType == AutoConnectServerFilterType.WHITE_LIST
-                                && clientConfig.getWhiteList().stream().anyMatch(i -> Pattern.matches(i, currentServer.ip)))) {
-                            getInstance().connectToExternalServer();
-                        } else {
-                            getInstance().launchIsolated();
-                        }
-                    } else {
-                        getInstance().launchIsolated();
-                    }
+                    getInstance().autoConnectToExternalServerWithRetry(currentServer);
                 } else {
                     // Single Player
                     getInstance().connectToExternalServer();

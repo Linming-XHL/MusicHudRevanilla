@@ -190,5 +190,9 @@
   "music_hud.gui.text.loggedOut": "Logged out",
   "music_hud.gui.text.disconnected": "Disconnected",
   "music_hud.gui.text.networkRequired": "Requires server connection",
-  "music_hud.gui.text.searching": "Searching..."
+  "music_hud.gui.text.searching": "Searching...",
+  "music_hud.text.autoConnecting": "Auto connecting to server-side Music HUD...",
+  "music_hud.text.autoConnectRetrying": "Retrying server-side Music HUD connection (attempt {})...",
+  "music_hud.text.autoConnectSucceeded": "Auto connected to server-side Music HUD",
+  "music_hud.text.autoConnectFailed": "Failed to auto connect to server-side Music HUD"
 }
