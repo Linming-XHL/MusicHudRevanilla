@@ -191,6 +191,7 @@
   "music_hud.gui.text.disconnected": "已断开连接",
   "music_hud.gui.text.networkRequired": "需要服务器连接",
   "music_hud.gui.text.searching": "正在搜索...",
+  "music_hud.gui.text.searchTimeout": "搜索超时，请检查网络连接",
   "music_hud.text.autoConnecting": "正在自动连接服务器端 Music HUD...",
   "music_hud.text.autoConnectRetrying": "正在重试连接服务器端 Music HUD（第 {} 次）...",
   "music_hud.text.autoConnectSucceeded": "已自动连接到服务器端 Music HUD",

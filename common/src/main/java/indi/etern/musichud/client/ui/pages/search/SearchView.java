@@ -18,6 +18,7 @@ import indi.etern.musichud.beans.music.MusicDetail;
 import indi.etern.musichud.beans.music.Playlist;
 import indi.etern.musichud.client.ui.Theme;
 import indi.etern.musichud.client.ui.utils.ButtonInsetBackgroundFactory;
+import indi.etern.musichud.client.ui.utils.ToastUtil;
 import indi.etern.musichud.interfaces.ClientConfig;
 import indi.etern.musichud.network.IClientNetworkService;
 import indi.etern.musichud.network.payloads.requestResponseCycle.SearchRequest;
@@ -32,12 +33,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static icyllis.modernui.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static icyllis.modernui.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 public class SearchView extends LinearLayout {
+    private static final long SEARCH_TIMEOUT_SECONDS = 10;
     @Getter
     private static SearchView instance = null;
     @Getter
@@ -136,11 +139,29 @@ public class SearchView extends LinearLayout {
                 searchMeta.pendingFuture.cancel(true);
             }
             SearchMeta searchMeta1 = new SearchMeta(searchType, searchText);
-            searchMeta1.pendingFuture = new CompletableFuture<>();
+            CompletableFuture<CompletingType> future = new CompletableFuture<>();
+            future.orTimeout(SEARCH_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .whenComplete((result, ex) -> {
+                        if (ex != null || !future.isDone()) {
+                            onSearchTimeout(searchType);
+                        }
+                    });
+            searchMeta1.pendingFuture = future;
             searchMetas.put(searchType, searchMeta1);
             searchRefreshListeners.forEach(listener -> listener.accept(searchMeta1));
             clientNetworkService.sendToServer(new SearchRequest(searchText, searchType, 0));
         }
+    }
+
+    private void onSearchTimeout(SearchType searchType) {
+        SearchMeta searchMeta = searchMetas.get(searchType);
+        if (searchMeta != null && searchMeta.pendingFuture != null && !searchMeta.pendingFuture.isDone()) {
+            searchMeta.pendingFuture = null;
+            searchMetas.put(searchType, searchMeta);
+        }
+        MusicHud.EXECUTOR.execute(() -> {
+            ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.searchTimeout"));
+        });
     }
 
     public void loadMoreSearchResult() {

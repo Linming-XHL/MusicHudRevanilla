@@ -22,9 +22,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MusicHudScreen extends Screen {
     private static final ClientConfig CLIENT_CONFIG = ClientConfig.getInstance();
+    private static final long SEARCH_TIMEOUT_SECONDS = 10;
     @Nullable
     private final Screen previous;
     private int selectedTab = 0;
@@ -33,6 +37,8 @@ public class MusicHudScreen extends Screen {
     private String searchQuery = "";
     private List<MusicDetail> searchResults = new ArrayList<>();
     private boolean hasSearched = false;
+    private final AtomicBoolean searchPending = new AtomicBoolean(false);
+    private volatile CompletableFuture<Void> searchTimeoutFuture;
 
     public MusicHudScreen(@Nullable Screen previous) {
         super(Component.translatable(MusicHud.MOD_ID + ".gui.title"));
@@ -183,10 +189,36 @@ public class MusicHudScreen extends Screen {
             return;
         }
 
+        if (searchPending.get()) {
+            return;
+        }
+
+        searchPending.set(true);
+
+        CompletableFuture<Void> timeoutFuture = CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep(TimeUnit.SECONDS.toMillis(SEARCH_TIMEOUT_SECONDS));
+            } catch (InterruptedException ignored) {
+                return;
+            }
+            if (searchPending.compareAndSet(true, false)) {
+                Minecraft.getInstance().execute(() -> {
+                    ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.searchTimeout"));
+                    hasSearched = false;
+                    searchResults = new ArrayList<>();
+                    rebuildWidgets();
+                });
+            }
+        }, MusicHud.EXECUTOR);
+
+        this.searchTimeoutFuture = timeoutFuture;
+
         SearchMusicResponse.setReceiver(response -> {
-            searchResults = response.result();
-            hasSearched = true;
-            Minecraft.getInstance().execute(this::rebuildWidgets);
+            if (searchPending.compareAndSet(true, false)) {
+                searchResults = response.result();
+                hasSearched = true;
+                Minecraft.getInstance().execute(this::rebuildWidgets);
+            }
         });
 
         IClientNetworkService.getInstance().sendToServer(new SearchRequest(searchQuery, SearchType.MUSIC, 0));
