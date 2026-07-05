@@ -7,10 +7,14 @@ import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 @Getter
 @Setter
 public class TextRenderer implements HudRenderer {
     private static final ClientConfig clientConfig = ClientConfig.getInstance();
+    private static final Map<String, Float> WIDTH_CACHE = new ConcurrentHashMap<>(64);
     private int vanillaLineHeight = -1;
     private TextStyle currentTextData;
     private Layout layout;
@@ -38,39 +42,28 @@ public class TextRenderer implements HudRenderer {
         }
 
         if (currentTextData == null) {
-            // 第一次设置文本，直接显示
             currentTextData = new TextStyle(text, baseColor);
             transitionProgress = 1.0f;
             isTransitioning = false;
             nextTextData = null;
         } else if (text.equals(currentTextData.text)) {
-            // 文本相同，无需过渡
             if (isTransitioning) {
-                // 如果正在过渡，直接完成当前过渡
                 currentTextData.text = text;
                 transitionProgress = 1.0f;
                 isTransitioning = false;
                 nextTextData = null;
             }
         } else {
-            // 文本不同，开始过渡
             if (isTransitioning) {
-                // 如果已经在过渡中，有两种处理方式：
-                // 1. 如果新文本与nextTextData相同，保持当前过渡
-                // 2. 如果不同，重置过渡，重新开始
                 if (nextTextData == null || !text.equals(nextTextData.text)) {
-                    // 新文本不同，快速完成当前过渡，然后开始新的过渡
                     if (nextTextData != null) {
-                        // 立即完成当前过渡
                         currentTextData = nextTextData;
                     }
-                    // 开始新的过渡
                     nextTextData = new TextStyle(text, baseColor);
                     transitionProgress = 0.0f;
                     lastUpdateTime = System.currentTimeMillis();
                 }
             } else {
-                // 不在过渡中，开始新过渡
                 nextTextData = new TextStyle(text, baseColor);
                 transitionProgress = 0.0f;
                 isTransitioning = true;
@@ -99,7 +92,6 @@ public class TextRenderer implements HudRenderer {
     }
 
     public void render(HudRenderContext context) {
-        // 更新过渡进度
         updateTransition();
 
         if (currentTextData == null || layout.getHeight() <= 0 || layout.getWidth() <= 0) {
@@ -134,11 +126,9 @@ public class TextRenderer implements HudRenderer {
         String text = textData.text;
         if (text == null || text.isEmpty()) return;
 
-        // 计算带透明度的颜色
         int color = getColorWithAlpha(textData.baseColor, alpha);
 
-        // 计算位置
-        float measuredWidth = measureWidth(text);
+        float measuredWidth = textData.getCachedWidth();
         float textRenderWidth = scale * measuredWidth;
         float layoutWidth = layout.getWidth();
         float x = position.computeX(absolutePosition.x(), text, Math.min(textRenderWidth, layoutWidth));
@@ -189,9 +179,7 @@ public class TextRenderer implements HudRenderer {
     private int getColorWithAlpha(int baseColor, float alpha) {
         float a = ((baseColor >> 24) & 0xff) / 255.0f;
         int alphaValue = (int) (a * alpha * 255);
-        // 确保 alpha 值在 0-255 范围内
         alphaValue = Math.clamp(alphaValue, 0, 255);
-        // 将 Alpha 通道合并到颜色中 (ARGB 格式)
         return (alphaValue << 24) | (baseColor & 0x00FFFFFF);
     }
 
@@ -199,7 +187,7 @@ public class TextRenderer implements HudRenderer {
         if (currentTextData == null || currentTextData.text == null || currentTextData.text.isEmpty()) {
             return 0f;
         } else {
-            return Math.min(layout.getWidth(), measureWidth(currentTextData.text) * (layout.getHeight() / vanillaLineHeight));
+            return Math.min(layout.getWidth(), currentTextData.getCachedWidth() * (layout.getHeight() / vanillaLineHeight));
         }
     }
 
@@ -215,7 +203,7 @@ public class TextRenderer implements HudRenderer {
             int codePoint = text.codePointAt(index);
             int cpLen = Character.charCount(codePoint);
             String cpStr = new String(new int[]{codePoint}, 0, 1);
-            int w = Minecraft.getInstance().font.width(cpStr);
+            int w = getCachedCharWidth(cpStr);
             if (width + w > maxWidth) {
                 break;
             }
@@ -239,7 +227,11 @@ public class TextRenderer implements HudRenderer {
     }
 
     private float measureWidth(String text) {
-        return Minecraft.getInstance().font.width(text);
+        return WIDTH_CACHE.computeIfAbsent(text, t -> (float) Minecraft.getInstance().font.width(t));
+    }
+
+    private int getCachedCharWidth(String charStr) {
+        return WIDTH_CACHE.computeIfAbsent(charStr, t -> (float) Minecraft.getInstance().font.width(t)).intValue();
     }
 
     public enum Position {
@@ -266,10 +258,18 @@ public class TextRenderer implements HudRenderer {
     public static class TextStyle {
         public final int baseColor;
         public String text;
+        private float cachedWidth = -1;
 
         public TextStyle(String text, int baseColor) {
             this.text = text;
             this.baseColor = baseColor;
+        }
+
+        public float getCachedWidth() {
+            if (cachedWidth < 0 && text != null && !text.isEmpty()) {
+                cachedWidth = WIDTH_CACHE.computeIfAbsent(text, t -> (float) Minecraft.getInstance().font.width(t));
+            }
+            return cachedWidth;
         }
     }
 }

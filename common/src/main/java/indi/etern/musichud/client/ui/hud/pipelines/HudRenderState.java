@@ -30,6 +30,16 @@ public record HudRenderState(
                 UniformDataUtils.getBounds(-layout.getWidth() / 2f, -layout.getHeight() / 2f, layout.getWidth() / 2f, layout.getHeight() / 2f, pose), uniforms);
     }
 
+    public HudRenderState(@NonNull RenderPipeline pipeline,
+                          @NonNull TextureSetup textureSetup,
+                          @NonNull Matrix3x2f pose,
+                          @NonNull Layout layout,
+                          @Nullable Layout albumLayout,
+                          HudUniform... uniforms) {
+        this(pipeline, textureSetup, pose, layout.getWidth(), layout.getHeight(),
+                UniformDataUtils.getBounds(-layout.getWidth() / 2f, -layout.getHeight() / 2f, layout.getWidth() / 2f, layout.getHeight() / 2f, pose), uniforms);
+    }
+
     @Override
     public void buildVertices(@NonNull VertexConsumer consumer) {
         float left = -width / 2f;

@@ -21,6 +21,7 @@ public class HudRenderPipelines {
             .withVertexShader(MusicHud.location("core/background"))
             .withFragmentShader(MusicHud.location("core/background"))
             .withUniform("MHBasePosition", UniformType.UNIFORM_BUFFER)
+            .withUniform("MHAlbumPosition", UniformType.UNIFORM_BUFFER)
             .withUniform("MHNowPlayingThemeColor", UniformType.UNIFORM_BUFFER)
             .withUniform("MHDynamicStatus", UniformType.UNIFORM_BUFFER)
             .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS)

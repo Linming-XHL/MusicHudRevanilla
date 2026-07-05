@@ -48,6 +48,11 @@ public class HudRendererManager {
     private final HudRenderContext hudRenderContext = new HudRenderContext();
     private volatile HudRenderData hudBaseData;
     private volatile HudRenderData imageDisplayData;
+    
+    public HudRenderData getImageDisplayData() {
+        return imageDisplayData;
+    }
+    
     @Setter
     private volatile Layout baseLayout;
     private float contentInterval;

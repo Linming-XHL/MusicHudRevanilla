@@ -4,6 +4,10 @@ layout(std140) uniform MHBasePosition {
     mat4 u_Translation;
     vec3 u_Layout; // (halfWidth, halfHeight, cornerRadius)
 };
+layout(std140) uniform MHAlbumPosition {
+    mat4 u_AlbumTranslation;
+    vec3 u_AlbumLayout; // (halfWidth, halfHeight, cornerRadius)
+};
 layout(std140) uniform MHNowPlayingThemeColor {
     vec4 u_Primary;
     vec4 u_Secondary;
@@ -30,6 +34,23 @@ void main() {
     float halfHeight = u_Layout[1];
     float radius     = u_Layout[2];
     float timestamp  = u_Dynamic1[0];
+
+    // Album area to skip (early exit to avoid double SDF with album image shader)
+    // Handle null album layout by using default values that make discard never trigger
+    float albumHalfW = u_AlbumLayout[0];
+    float albumHalfH = u_AlbumLayout[1];
+    float albumRadius = u_AlbumLayout[2];
+    // albumCenter from 3x2 -> 4x4 conversion: translation in m20, m21 (not m30, m31)
+    vec2 albumCenter = vec2(u_AlbumTranslation[0].w, u_AlbumTranslation[1].w);
+
+    // If album layout is invalid (all zeros), skip the discard
+    bool hasValidAlbum = albumHalfW > 0.0 && albumHalfH > 0.0;
+    if (hasValidAlbum) {
+        vec2 relToAlbum = f_Position - albumCenter;
+        float albumDis = length(max(abs(relToAlbum) - vec2(albumHalfW, albumHalfH) + albumRadius, 0.0))
+                       + min(max(relToAlbum.x, relToAlbum.y), 0.0) - albumRadius;
+        if (albumDis < 0.0) discard;
+    }
 
     // Simplified gradient animation using sine/cosine instead of expensive noise
     vec2 uv = f_Position / vec2(halfWidth * 2.0, halfHeight * 2.0);

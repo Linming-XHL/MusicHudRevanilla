@@ -243,7 +243,7 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
     private float calcHighlightWidth(LineState lineState,float lineHeight) {
         Line line = lineState.line;
         String text = line.text;
-        float textWidth = calcTextWidth(text, lineHeight);
+        float textWidth = lineState.getCachedFullTextWidth(text, lineHeight);
         LyricLine currentLyricLine = line.lyricLine;
         if (currentLyricLine == null) {
             return 0;
@@ -262,7 +262,7 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
                 currentPhraseStartOffset = previousPhrase.endOffset();
                 currentPhraseStartTime = previousPhrase.endTime();
                 if (currentPhraseStartOffset <= text.length()) {
-                    phraseStartOffest = calcTextWidth(text.substring(0, currentPhraseStartOffset), lineHeight);
+                    phraseStartOffest = lineState.getCachedSubstringWidth(text.substring(0, currentPhraseStartOffset), lineHeight);
                 }
             }
             LyricLine.Phrase currentPhrase = currentPhraseIndex < phrases.size() ? phrases.get(currentPhraseIndex) : null;
@@ -270,7 +270,7 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
             if (currentPhrase != null) {
                 float rate = (float) playedDuration.minus(currentPhraseStartTime).toMillis() / currentPhrase.durationMillis();
                 if (currentPhrase.endOffset() <= text.length()) {
-                    phraseWidth = calcTextWidth(text.substring(currentPhraseStartOffset, currentPhrase.endOffset()), lineHeight) * Math.clamp(rate, 0, 1);
+                    phraseWidth = lineState.getCachedSubstringWidth(text.substring(currentPhraseStartOffset, currentPhrase.endOffset()), lineHeight) * Math.clamp(rate, 0, 1);
                 }
             }
             return phraseStartOffest + phraseWidth;
@@ -331,6 +331,8 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
         long scrollStartTime;
         float scrollTarget;
         float scrollOffset;
+        float cachedFullTextWidth = -1;
+        float cachedLineHeight = -1;
 
         void reset(@Nullable Line line) {
             this.line = line;
@@ -340,6 +342,20 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
             this.scrollStartTime = 0;
             this.scrollTarget = 0;
             this.scrollOffset = 0;
+            this.cachedFullTextWidth = -1;
+            this.cachedLineHeight = -1;
+        }
+
+        float getCachedFullTextWidth(String text, float lineHeight) {
+            if (cachedFullTextWidth < 0 || cachedLineHeight != lineHeight) {
+                cachedFullTextWidth = calcTextWidth(text, lineHeight);
+                cachedLineHeight = lineHeight;
+            }
+            return cachedFullTextWidth;
+        }
+
+        float getCachedSubstringWidth(String substring, float lineHeight) {
+            return calcTextWidth(substring, lineHeight);
         }
 
         void copyFrom(LineState other) {
@@ -354,6 +370,8 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
             this.scrollStartTime = other.scrollStartTime;
             this.scrollTarget = other.scrollTarget;
             this.scrollOffset = other.scrollOffset;
+            this.cachedFullTextWidth = other.cachedFullTextWidth;
+            this.cachedLineHeight = other.cachedLineHeight;
         }
     }
 
