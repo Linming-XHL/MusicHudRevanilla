@@ -422,10 +422,6 @@ public class StreamAudioPlayer {
 
                 // 继续下载剩余数据
                 while (!currentDownloadFuture.isDone() && currentDownloadFuture == downloadFuture) {
-                    if (localAudioBuffer.size() <= 1) {
-                        syncPlaying(currentDownloadFuture);
-                    }
-
                     byte[] audioData = decoder.readChunk(BUFFER_SIZE);
                     if (audioData == null) break;
 
@@ -500,18 +496,20 @@ public class StreamAudioPlayer {
         int bytesPerSample = getBytesPerSample(currentDecoder.getFormat());
         int bytesPerSecond = currentDecoder.getSampleRate() * bytesPerSample;
 
+        // Use a fixed reference time to avoid feedback loop where readChunk blocking
+        // causes millis to advance, which increases skipBytes, which causes more blocking
+        long refMillis = Duration.between(serverStartTime, ZonedDateTime.now()).toMillis();
+        long skipBytes = refMillis * bytesPerSecond / 1000;
+        // Compensate for initial buffer latency: when no audio has been
+        // buffered for playback yet, the play thread still needs to fill
+        // BUFFER_SIZE * BUFFER_COUNT bytes before alSourcePlay, causing a
+        // delay between sync and actual audio output. Subtract half the
+        // buffer to avoid audio lagging behind the wall clock.
+        if (playedBytes == 0) {
+            long bufferLatencyBytes = (long) BUFFER_SIZE * BUFFER_COUNT / 2;
+            skipBytes = Math.max(0, skipBytes - bufferLatencyBytes);
+        }
         while (!currentDownloadFuture.isDone() && currentDownloadFuture == downloadFuture) {
-            long millis = Duration.between(serverStartTime, ZonedDateTime.now()).toMillis();
-            long skipBytes = millis * bytesPerSecond / 1000;
-            // Compensate for initial buffer latency: when no audio has been
-            // buffered for playback yet, the play thread still needs to fill
-            // BUFFER_SIZE * BUFFER_COUNT bytes before alSourcePlay, causing a
-            // delay between sync and actual audio output. Subtract half the
-            // buffer to avoid audio lagging behind the wall clock.
-            if (playedBytes == 0) {
-                long bufferLatencyBytes = (long) BUFFER_SIZE * BUFFER_COUNT / 2;
-                skipBytes = Math.max(0, skipBytes - bufferLatencyBytes);
-            }
             if (playedBytes > skipBytes - bytesPerSample) {
                 break;
             }
