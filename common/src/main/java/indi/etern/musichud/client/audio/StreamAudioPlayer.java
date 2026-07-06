@@ -274,8 +274,8 @@ public class StreamAudioPlayer {
                                     byte[] audioData = playBuffer.poll(0, TimeUnit.MILLISECONDS);
 
                                     if (audioData == null) {
-                                        if (playBuffer.isEmpty() && NowPlayingInfo.getInstance().isCompleted()) {
-                                            // 播放已完成且缓冲区为空，结束播放
+                                        if (playBuffer.isEmpty() && (currentDownloadFuture.isDone() || NowPlayingInfo.getInstance().isCompleted())) {
+                                            // 下载已完成且缓冲区为空，结束播放
                                             LOGGER.debug("No more audio data available");
                                             currentPlayingFuture.complete(null);
                                             setStatus(Status.PLAYING);
