@@ -316,6 +316,17 @@ public class HudRendererManager {
     }
 
     private CompletableFuture<Void> loadAlbumImage(MusicDetail musicDetail) {
+        return loadAlbumImage(musicDetail, 0);
+    }
+
+    private CompletableFuture<Void> loadAlbumImage(MusicDetail musicDetail, int attempt) {
+        if (attempt >= 3) {
+            if (logger == null) {
+                logger = MusicHud.getLogger(HudRendererManager.class);
+            }
+            logger.error("Failed to load album image after {} attempts", attempt);
+            return CompletableFuture.completedFuture(null);
+        }
         return ImageUtils.downloadAsync(musicDetail.getAlbum().getThumbnailPicUrl(240))
                 .thenAccept(imageTextureData -> {
                     if (musicDetail.equals(nowPlayingInfo.getCurrentlyPlayingMusicDetail())) {
@@ -329,7 +340,7 @@ public class HudRendererManager {
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException ignored) {}
-                    loadAlbumImage(musicDetail);
+                    loadAlbumImage(musicDetail, attempt + 1);
                     return null;
                 }, MusicHud.EXECUTOR);
     }
@@ -372,8 +383,10 @@ public class HudRendererManager {
 
             hudRenderContext.clearContext();
             hudRenderContext.setGraphics(graphics);
+            hudRenderContext.freezePose();
 
             BACKGROUND_RENDERER.render(hudRenderContext);
+            hudRenderContext.nextStratum();
 
             IMAGE_RENDERER.render(hudRenderContext);
             PLAYER_HEAD_RENDERER.render(hudRenderContext);

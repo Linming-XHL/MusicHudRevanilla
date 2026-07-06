@@ -48,7 +48,8 @@ public class Album implements MusicCollection{
     transient PusherInfo pusherInfo = PusherInfo.EMPTY;
 
     public String getThumbnailPicUrl(int size) {
-        return picUrl + "?param=" + size + "y" + size;
+        String separator = picUrl.contains("?") ? "&" : "?";
+        return picUrl + separator + "param=" + size + "y" + size;
     }
 
     public String getName() {

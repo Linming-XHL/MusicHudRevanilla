@@ -34,6 +34,7 @@ public class HudRenderContext {
 
     @Setter
     private GuiGraphicsExtractor graphics;
+    private Matrix3x2f frozenPose;
 
     public HudRenderContext() {
         current = this;
@@ -45,7 +46,12 @@ public class HudRenderContext {
         }
         pendingUniforms.clear();
         uniformSlices.clear();
+        frozenPose = null;
         graphics = null;
+    }
+
+    public void freezePose() {
+        this.frozenPose = new Matrix3x2f(graphics.pose());
     }
 
     public void prepareUniforms() {
@@ -78,6 +84,9 @@ public class HudRenderContext {
     }
 
     public @NonNull Matrix3x2f currentPose() {
+        if (frozenPose != null) {
+            return new Matrix3x2f(frozenPose);
+        }
         return new Matrix3x2f(graphics.pose());
     }
 
