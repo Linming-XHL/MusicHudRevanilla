@@ -132,9 +132,9 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
             float progress = Easing.EASE_IN_OUT_SINE.getInterpolation((float) elapsed / line.line.scrollMs);
             line.scrollOffset = line.scrollTarget * progress;
         }
-    }
+}
 
-    private float calcTextWidth(String text, float lineHeight) {
+    private static float calcTextWidth(String text, float lineHeight) {
         if (text == null || text.isEmpty()) return 0;
         Font font = Minecraft.getInstance().font;
         float rawWidth = font.width(text);
