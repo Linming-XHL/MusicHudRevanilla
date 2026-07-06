@@ -195,6 +195,7 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
         float x = absolutePosition.x();
         float y = absolutePosition.y();
         context.pushScissor((int) x, (int) y, (int) (x + layout.getWidth()), (int) (y + layout.getHeight()));
+        try {
         if (isTransitioning && nextLine1.line != null && nextLine2.line != null) {
             float easedProgress = Easing.EASE_IN_OUT_QUINT.getInterpolation(transitionProgress);
             float oldYOffset = -easedProgress * layout.getHeight();
@@ -237,7 +238,9 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
                 }
             }
         }
-        context.popScissor();
+        } finally {
+            context.popScissor();
+        }
     }
 
     private float calcHighlightWidth(LineState lineState,float lineHeight) {
@@ -293,12 +296,13 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
         float drawX = baseX + scrollOffset;
         float drawY = baseY + yOffset;
 
-        context.transform()
-                .translate(drawX, drawY)
-                .scale(scale)
-                .end(transforming -> {
-                    context.drawString(Minecraft.getInstance().font, text, 0, 0, color, false);
-                });
+        HudRenderContext.Transforming transform = context.transform();
+        try {
+            transform.translate(drawX, drawY).scale(scale);
+            context.drawString(Minecraft.getInstance().font, text, 0, 0, color, false);
+        } finally {
+            transform.end();
+        }
     }
 
     private void renderLineHighlight(HudRenderContext context, LineState line, int baseX, int baseY, float lineHeight, float positionY, float highlightFromX, float highlightToX, float yOffset) {
@@ -307,18 +311,21 @@ public class ScrollingLyricLineRenderer implements HudRenderer {
         if (text.isEmpty()) return;
 
         float scale = lineHeight / Minecraft.getInstance().font.lineHeight;
-        if (!(scale <= 0)) {
-            float scrollOffset = line.scrollOffset;// 始终左对齐：起始X = baseX + scrollOffset
-            float drawX = baseX + scrollOffset;
-            float drawY = baseY + yOffset;
-            int toX = (int) (drawX + highlightToX);
-            context.pushScissor((int) highlightFromX, (int) positionY, toX, (int) (positionY + layout.getHeight()));
-            context.transform()
-                    .translate(drawX, drawY)
-                    .scale(scale)
-                    .end(transforming -> {
-                        context.drawString(Minecraft.getInstance().font, text, 0, 0, line.line.emphasizeColor, false);
-                    });
+        if (scale <= 0) return;
+        float scrollOffset = line.scrollOffset;// 始终左对齐：起始X = baseX + scrollOffset
+        float drawX = baseX + scrollOffset;
+        float drawY = baseY + yOffset;
+        int toX = (int) (drawX + highlightToX);
+        context.pushScissor((int) highlightFromX, (int) positionY, toX, (int) (positionY + layout.getHeight()));
+        try {
+            HudRenderContext.Transforming transform = context.transform();
+            try {
+                transform.translate(drawX, drawY).scale(scale);
+                context.drawString(Minecraft.getInstance().font, text, 0, 0, line.line.emphasizeColor, false);
+            } finally {
+                transform.end();
+            }
+        } finally {
             context.popScissor();
         }
     }

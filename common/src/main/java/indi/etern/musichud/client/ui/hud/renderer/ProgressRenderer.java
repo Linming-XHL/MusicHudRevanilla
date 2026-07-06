@@ -40,7 +40,7 @@ public class ProgressRenderer implements HudRenderer {
                 new HudRenderState(
                         HudRenderPipelines.PROGRESS_BAR,
                         TextureSetup.noTexture(),
-                        new Matrix3x2f(hudRenderContext.currentPose()),
+                        hudRenderContext.currentPose(),
                         layout,
                         layout,
                         progressData,

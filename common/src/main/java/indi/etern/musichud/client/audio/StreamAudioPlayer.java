@@ -263,7 +263,7 @@ public class StreamAudioPlayer {
                                 //noinspection SpellCheckingInspection
                                 checkALError("alGetSourcei-Processed");
 
-                                startPlayingFuture.complete(serverStartTime == null ? ZonedDateTime.now() : serverStartTime);
+                                startPlayingFuture.complete(ZonedDateTime.now());
 
                                 while (processed-- > 0) {
                                     int[] buffer = new int[1];

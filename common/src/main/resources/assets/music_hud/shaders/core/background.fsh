@@ -43,13 +43,17 @@ void main() {
     // albumCenter from 3x2 -> 4x4 conversion: translation in m20, m21 (not m30, m31)
     vec2 albumCenter = vec2(u_AlbumTranslation[0].w, u_AlbumTranslation[1].w);
 
-    // If album layout is invalid (all zeros), skip the discard
+    // Album area: skip gradient computation for performance,
+    // but output transparent (not discard) to let album image layer show through
     bool hasValidAlbum = albumHalfW > 0.0 && albumHalfH > 0.0;
     if (hasValidAlbum) {
         vec2 relToAlbum = f_Position - albumCenter;
         float albumDis = length(max(abs(relToAlbum) - vec2(albumHalfW, albumHalfH) + albumRadius, 0.0))
                        + min(max(relToAlbum.x, relToAlbum.y), 0.0) - albumRadius;
-        if (albumDis < 0.0) discard;
+        if (albumDis < 0.0) {
+            fragColor = vec4(0.0);
+            return;
+        }
     }
 
     // Simplified gradient animation using sine/cosine instead of expensive noise
