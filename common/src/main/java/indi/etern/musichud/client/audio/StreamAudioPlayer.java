@@ -274,19 +274,20 @@ public class StreamAudioPlayer {
                                     byte[] audioData = playBuffer.poll(500, TimeUnit.MILLISECONDS);
 
                                     if (audioData == null) {
-                                        if (playBuffer.isEmpty() && (currentDownloadFuture.isDone() || NowPlayingInfo.getInstance().isCompleted())) {
-                                            // 下载已完成且缓冲区为空，结束播放
+                                        if (playBuffer.isEmpty() && NowPlayingInfo.getInstance().isCompleted()) {
+                                            // 歌曲播放完毕，结束播放
                                             LOGGER.debug("No more audio data available");
                                             currentPlayingFuture.complete(null);
                                             setStatus(Status.PLAYING);
                                             break;
                                         } else if (!currentDownloadFuture.isDone()) {
-                                            // 等待后仍无数据，灌静音维持 OpenAL
+                                            // 下载还在进行，等待后仍无数据，灌静音维持 OpenAL
                                             audioData = new byte[BUFFER_SIZE];
                                             if (status.get() != Status.ERROR && status.get() != Status.RETRYING) {
                                                 setStatus(Status.BUFFERING);
                                             }
                                         } else {
+                                            // 下载已完成但歌还没结束（截断/错误），灌静音等待重试
                                             audioData = new byte[BUFFER_SIZE];
                                         }
                                     } else {
@@ -424,7 +425,29 @@ public class StreamAudioPlayer {
                 // 继续下载剩余数据
                 while (!currentDownloadFuture.isDone() && currentDownloadFuture == downloadFuture) {
                     byte[] audioData = decoder.readChunk(BUFFER_SIZE);
-                    if (audioData == null) break;
+                    if (audioData == null) {
+                        // decoder 达到 EOF，但歌曲可能还没结束（CDN 截断）
+                        if (!NowPlayingInfo.getInstance().isCompleted()) {
+                            LOGGER.warn("Audio download reached EOF before song completion, retrying...");
+                            playedBytes = 0;
+                            forceSyncInternal = true;
+                            shouldRequestResource = true;
+                            if (!handleDownloadRetry(++localRetryCount, "Premature EOF", downloadInitializedFuture, currentDownloadFuture)) {
+                                break;
+                            }
+                            setStatus(Status.RETRYING);
+                            try {
+                                int retryDelayAdditionalMs = 1000;
+                                int delay = localRetryCount * retryDelayAdditionalMs;
+                                LOGGER.debug("Waiting {} ms before retry", delay);
+                                Thread.sleep(delay);
+                            } catch (InterruptedException ie) {
+                                LOGGER.debug("Download thread interrupted");
+                            }
+                            continue;
+                        }
+                        break;
+                    }
 
                     if (currentPlayingFuture.isDone() || currentDownloadFuture != downloadFuture) break;
 
