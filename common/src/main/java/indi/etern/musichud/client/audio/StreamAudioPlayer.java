@@ -42,7 +42,7 @@ import java.util.function.Consumer;
 public class StreamAudioPlayer {
     private static final int BUFFER_COUNT = 4;
     private static final int BUFFER_SIZE = 65536;
-    private static final int MAX_DOWNLOAD_RETRIES = 2;
+    private static final int MAX_DOWNLOAD_RETRIES = 5;
     private static final Logger LOGGER = MusicHud.getLogger(StreamAudioPlayer.class);
     private static final ClientConfig clientConfig = ClientConfig.getInstance();
     private static volatile StreamAudioPlayer instance = null;
@@ -271,7 +271,7 @@ public class StreamAudioPlayer {
                                     //noinspection SpellCheckingInspection
                                     checkALError("alSourceUnqueueBuffers-Main");
 
-                                    byte[] audioData = playBuffer.poll(0, TimeUnit.MILLISECONDS);
+                                    byte[] audioData = playBuffer.poll(500, TimeUnit.MILLISECONDS);
 
                                     if (audioData == null) {
                                         if (playBuffer.isEmpty() && (currentDownloadFuture.isDone() || NowPlayingInfo.getInstance().isCompleted())) {
@@ -281,6 +281,7 @@ public class StreamAudioPlayer {
                                             setStatus(Status.PLAYING);
                                             break;
                                         } else if (!currentDownloadFuture.isDone()) {
+                                            // 等待后仍无数据，灌静音维持 OpenAL
                                             audioData = new byte[BUFFER_SIZE];
                                             if (status.get() != Status.ERROR && status.get() != Status.RETRYING) {
                                                 setStatus(Status.BUFFERING);
