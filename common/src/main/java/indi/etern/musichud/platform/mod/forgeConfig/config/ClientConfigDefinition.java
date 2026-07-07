@@ -48,9 +48,7 @@ public class ClientConfigDefinition implements ClientConfig {
     private final ModConfigSpec.ConfigValue<Integer> hudCornerRadius;
     private final ModConfigSpec.ConfigValue<String> clientCookie;
     private final ModConfigSpec.ConfigValue<String> clientAccountConfig;
-    private final ModConfigSpec.ConfigValue<Boolean> enabledInIntegratedServer;
     private final ModConfigSpec.ConfigValue<Boolean> enableAutoConnect;
-    private final ModConfigSpec.ConfigValue<Boolean> enableIsolatedMode;
     private final ModConfigSpec.ConfigValue<String> autoConnectServerFilterType;
     private final ModConfigSpec.ConfigValue<String> autoConnectBlackList;
     private final ModConfigSpec.ConfigValue<String> autoConnectWhiteList;
@@ -147,18 +145,10 @@ public class ClientConfigDefinition implements ClientConfig {
                 .comment("Client account config json")
                 .translation(MusicHud.MOD_ID + ".internal.clientAccountConfig")
                 .define("clientAccountConfig", "");
-        enabledInIntegratedServer = builder
-                .comment("Enable embedded server (To enable Music HUD in singleplayer or LAN multiplayer)")
-                .translation(MusicHud.MOD_ID + ".config.integratedServer.enable")
-                .define("enabledInIntegratedServer", true);
         enableAutoConnect = builder
                 .comment("Enable auto connect")
                 .translation(MusicHud.MOD_ID + ".config.autoConnect")
                 .define("enableAutoConnect", true);
-        enableIsolatedMode = builder
-                .comment("Enable client only mode")
-                .translation(MusicHud.MOD_ID + ".config.clientOnlyMode")
-                .define("enableClientOnlyMode", true);
         autoConnectServerFilterType = builder
                 .comment("Auto connecting servers filter type (white list / black list)")
                 .translation(MusicHud.MOD_ID + ".config.autoConnectServerFilterType")
@@ -188,16 +178,6 @@ public class ClientConfigDefinition implements ClientConfig {
     @Override
     public void setEnableAutoConnect(boolean autoConnect) {
         this.enableAutoConnect.set(autoConnect);
-    }
-
-    @Override
-    public boolean getEnableIsolatedMode() {
-        return this.enableIsolatedMode.get();
-    }
-
-    @Override
-    public void setEnableIsolatedMode(boolean autoConnect) {
-        this.enableIsolatedMode.set(autoConnect);
     }
 
     @Override
@@ -380,16 +360,6 @@ public class ClientConfigDefinition implements ClientConfig {
     @Override
     public void setClientAccountConfig(ProfileConfigData clientAccountConfig) {
         this.clientAccountConfig.set(JsonUtil.gson.toJson(clientAccountConfig));
-    }
-
-    @Override
-    public boolean getEnabledInIntegratedServer() {
-        return enabledInIntegratedServer.get();
-    }
-
-    @Override
-    public void setEnabledInIntegratedServer(boolean enabledInIntegratedServer) {
-        this.enabledInIntegratedServer.set(enabledInIntegratedServer);
     }
 
     @Override

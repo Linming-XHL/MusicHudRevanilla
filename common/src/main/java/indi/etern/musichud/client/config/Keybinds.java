@@ -43,7 +43,7 @@ public class Keybinds implements ClientRegister {
                 GLFW.GLFW_KEY_COMMA,
                 category
         );
-        var toggleIsolatedMode = new KeyMapping(
+        var toggleConnection = new KeyMapping(
                 MusicHud.MOD_ID + ".toggle_connection",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
@@ -82,7 +82,7 @@ public class Keybinds implements ClientRegister {
                 clientConfig.save();
             });
         });
-        service.register(toggleIsolatedMode, () -> {
+        service.register(toggleConnection, () -> {
             MusicHud.EXECUTOR.execute(loginService::keyBindsToggleConnection);
         });
         service.register(muteMapping, () -> {

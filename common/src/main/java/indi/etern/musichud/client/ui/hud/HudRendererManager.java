@@ -287,8 +287,7 @@ public class HudRendererManager {
                 LYRICS_LINE_RENDERER.clear();
                 PlayerInfo pusherPlayerInfo = nowPlayingInfo.getPusherPlayerInfo();
                 if (pusherPlayerInfo == null) {
-                    if (Minecraft.getInstance().getCurrentServer() == null || //single player
-                            MusicHud.getConnectStatus() != MusicHud.ConnectStatus.CONNECTED && clientConfig.getEnableIsolatedMode()) {// isolated mode
+                    if (Minecraft.getInstance().getCurrentServer() == null) {
                         LocalPlayer player = Minecraft.getInstance().player;
                         if (player != null) {
                             PLAYER_HEAD_RENDERER.setSkinResource(player.getSkin().body().texturePath());

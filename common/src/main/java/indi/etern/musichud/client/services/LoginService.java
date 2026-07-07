@@ -21,8 +21,6 @@ import indi.etern.musichud.network.payloads.requestResponseCycle.AnonymousLoginR
 import indi.etern.musichud.network.payloads.requestResponseCycle.ConnectRequest;
 import indi.etern.musichud.network.payloads.requestResponseCycle.CookieLoginRequest;
 import indi.etern.musichud.network.payloads.requestResponseCycle.StartQRLoginResponse;
-import indi.etern.musichud.server.api.MusicPlayerServerService;
-import indi.etern.musichud.server.api.impl.ncm.LoginApiService;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
@@ -84,12 +82,7 @@ public class LoginService {
             loginResponseHandler.accept(qrLoginResponse);
     };
     private double lastPressTime;
-    @Getter
-    private ConnectionType connectionType;
 
-    public enum ConnectionType {
-        EXTERNAL, INTERNAL
-    }
     public static LoginService getInstance() {
         if (instance == null) {
             synchronized (LoginService.class) {
@@ -115,14 +108,6 @@ public class LoginService {
         LoginCookieInfo loginCookieInfo = LoginCookieInfo.clientCurrentCookie();
         return loginCookieInfo.type() != LoginType.UNLOGGED &&
                 loginCookieInfo.type() != LoginType.ANONYMOUS;
-    }
-
-    public void connectAsPrevious() {
-        if (connectionType == ConnectionType.EXTERNAL) {
-            connectToExternalServer();
-        } else {
-            launchIsolated();
-        }
     }
 
     public void connectToExternalServer() {
@@ -159,9 +144,6 @@ public class LoginService {
                 return;
             }
             ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".text.autoConnectFailed"));
-            if (clientConfig.getEnableIsolatedMode() && isSameMultiplayerServer(serverData)) {
-                launchIsolated();
-            }
         });
     }
 
@@ -186,10 +168,7 @@ public class LoginService {
         }
     }
 
-    public void loginToServer(ConnectionType type) {
-        if (type != null) {
-            connectionType = type;
-        }
+    public void loginToServer() {
         if (isLogined()) {
             logger.info("Previous cookie found");
             loginToServerByCookieWithRefreshCheck();
@@ -214,27 +193,12 @@ public class LoginService {
         loginAsAnonymousToServer();
     }
 
-    public void disconnectToExternalOrIntegratedServer() {
+    public void disconnect() {
         clientNetworkService.sendToServer(LogoutMessage.MESSAGE);
         MusicService.resetCurrentMusicStatus();
         NowPlayingInfo.getInstance().stop();
         StreamAudioPlayer.getInstance().stop();
-
         MusicHud.setConnectStatus(MusicHud.ConnectStatus.NOT_CONNECTED);
-//        Profile.setCurrent(Profile.ANONYMOUS);
-    }
-
-    public void switchToIsolate() {
-        disconnectToExternalOrIntegratedServer();
-        launchIsolated();
-    }
-
-    private void launchIsolated() {
-        loginToServer(ConnectionType.INTERNAL);
-        MusicService.resetCurrentMusicStatus();
-        NowPlayingInfo.getInstance().stop();
-        StreamAudioPlayer.getInstance().stop();
-        MusicPlayerServerService.getInstance().sendSyncPlayingStatusToPlayer(Minecraft.getInstance().player);
     }
 
     public void switchToServer() {
@@ -244,11 +208,7 @@ public class LoginService {
     public Boolean toggleConnection() {
         MusicHud.ConnectStatus connectStatus = MusicHud.getConnectStatus();
         if (connectStatus == MusicHud.ConnectStatus.CONNECTED) {
-            if (clientConfig.getEnableIsolatedMode()) {
-                switchToIsolate();
-            } else {
-                disconnectToExternalOrIntegratedServer();
-            }
+            disconnect();
             return true;
         } else if (connectStatus == MusicHud.ConnectStatus.NOT_CONNECTED) {
             switchToServer();
@@ -277,8 +237,6 @@ public class LoginService {
         }
     }
 
-
-
     @RegisterMark
     public static final class RegisterImpl implements ClientRegister {
         @Override
@@ -289,16 +247,11 @@ public class LoginService {
                 if (currentServer != null) {
                     getInstance().autoConnectToExternalServerWithRetry(currentServer);
                 } else {
-                    // Single Player
                     getInstance().connectToExternalServer();
                 }
             });
             eventService.registerClientPlayerQuit((player) -> {
-                if (MusicHud.getConnectStatus() == MusicHud.ConnectStatus.NOT_CONNECTED) {
-                    if (clientConfig.getEnableIsolatedMode()) {
-                        LoginApiService.getInstance().logout(player);
-                    }
-                } else {
+                if (MusicHud.getConnectStatus() != MusicHud.ConnectStatus.NOT_CONNECTED) {
                     MusicHud.setConnectStatus(MusicHud.ConnectStatus.NOT_CONNECTED);
                 }
             });

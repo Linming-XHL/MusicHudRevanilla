@@ -67,7 +67,7 @@ public class HomeView extends LinearLayout {
         idlePlaySourceCardMap.clear();
 
         boolean enabled = clientConfig.getEnable();
-        if (MusicHud.getConnectStatus() != MusicHud.ConnectStatus.CONNECTED && !ClientConfig.getInstance().getEnableIsolatedMode() || !enabled) {
+        if (MusicHud.getConnectStatus() != MusicHud.ConnectStatus.CONNECTED || !enabled) {
             setGravity(Gravity.CENTER);
             TextView textView = Theme.getNotificationTextView(context, enabled);
             addView(textView);

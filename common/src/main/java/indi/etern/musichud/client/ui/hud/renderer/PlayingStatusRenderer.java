@@ -15,7 +15,7 @@ public class PlayingStatusRenderer implements HudRenderer {
     public static final Identifier RETRYING_ICON_LOCATION = MusicHud.location("textures/gui/icons/rotate_cw.png");
     public static final Identifier ERROR_ICON_LOCATION = MusicHud.location("textures/gui/icons/circle_x.png");
     public static final Identifier PLAYING_CONNECTED_ICON_LOCATION = MusicHud.location("textures/gui/icons/link.png");
-    public static final Identifier PLAYING_ISOLATED_LOCATION = MusicHud.location("textures/gui/icons/unlink.png");
+    public static final Identifier PLAYING_NOT_CONNECTED_LOCATION = MusicHud.location("textures/gui/icons/unlink.png");
     public static final Identifier MUTED_LOCATION = MusicHud.location("textures/gui/icons/volume_x.png");
     private static volatile PlayingStatusRenderer instance;
     private final ClientConfig clientConfig = ClientConfig.getInstance();
@@ -54,7 +54,7 @@ public class PlayingStatusRenderer implements HudRenderer {
                 } else if (MusicHud.getConnectStatus() == MusicHud.ConnectStatus.CONNECTED) {
                     yield PLAYING_CONNECTED_ICON_LOCATION;
                 } else if (MusicHud.getConnectStatus() == MusicHud.ConnectStatus.NOT_CONNECTED) {
-                    yield PLAYING_ISOLATED_LOCATION;
+                    yield PLAYING_NOT_CONNECTED_LOCATION;
                 } else {
                     yield null;
                 }

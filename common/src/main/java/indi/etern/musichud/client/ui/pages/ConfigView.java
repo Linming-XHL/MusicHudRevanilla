@@ -82,9 +82,9 @@ public class ConfigView extends LinearLayout {
             booleanOption.setOnChanged(() -> {
                 MuiModApi.postToUiThread(MainFragment::refresh);
                 if (clientConfig.getEnable()) {
-                    loginService.connectAsPrevious();
+                    loginService.connectToExternalServer();
                 } else {
-                    loginService.disconnectToExternalOrIntegratedServer();
+                    loginService.disconnect();
                 }
             });
             PreferencesFragment.BooleanOption translatedLyricOption = new PreferencesFragment.BooleanOption(context,
@@ -276,23 +276,6 @@ public class ConfigView extends LinearLayout {
                     .setDefaultValue(true);
             autoConnectToServerOption.create(multiplayerCategory);
 
-            PreferencesFragment.BooleanOption enableIsolatedMode = new PreferencesFragment.BooleanOption(
-                    context,
-                    I18n.get(MusicHud.MOD_ID + ".config.externalServer.enableIsolatedMode"),
-                    clientConfig::getEnableIsolatedMode,
-                    clientConfig::setEnableIsolatedMode)
-                    .setDefaultValue(true);
-            enableIsolatedMode.setOnChanged(() -> {
-                if (MusicHud.getConnectStatus() != MusicHud.ConnectStatus.CONNECTED) {
-                    if (clientConfig.getEnableIsolatedMode()) {
-                        loginService.switchToIsolate();
-                    } else {
-                        loginService.disconnectToExternalOrIntegratedServer();
-                    }
-                }
-            });
-            enableIsolatedMode.create(multiplayerCategory);
-
             AutoConnectServerFilterType[] filterTypes = {AutoConnectServerFilterType.BLACK_LIST, AutoConnectServerFilterType.WHITE_LIST};
             List<AutoConnectServerFilterType> filterTypeList = Arrays.stream(filterTypes).toList();
             new PreferencesFragment.DropDownOption<>(
@@ -373,30 +356,6 @@ public class ConfigView extends LinearLayout {
             LinearLayout.LayoutParams params1 = new LayoutParams(MATCH_PARENT, WRAP_CONTENT);
             params1.setMargins(0, dp(6), 0, dp(128));
             view.addView(integratedServerCategory, params1);
-
-            PreferencesFragment.BooleanOption enableInIntegratedServerOption = new PreferencesFragment.BooleanOption(
-                    context,
-                    I18n.get(MusicHud.MOD_ID + ".config.integratedServer.enable"),
-                    clientConfig::getEnabledInIntegratedServer,
-                    clientConfig::setEnabledInIntegratedServer)
-                    .setDefaultValue(true);
-            enableInIntegratedServerOption.create(integratedServerCategory);
-            ApiServerManager apiServerManager = ApiServerManager.getInstance();
-            enableInIntegratedServerOption.setOnChanged(() -> {
-                ILoginApiService loginApiService = ILoginApiService.getInstance(ApiProvider.NCM);
-                if (clientConfig.getEnabledInIntegratedServer()) {
-                    if (apiServerManager != null) {
-                        apiServerManager.restartApiServer();
-                    }
-                    loginApiService.reconnectAll();
-                } else {
-                    MusicPlayerServerService.getInstance().reset();
-                    loginApiService.disconnectToAll();
-                    if (apiServerManager != null) {
-                        apiServerManager.stopApiServer();
-                    }
-                }
-            });
 
             PreferencesFragment.BooleanOption startupBinaryApiServerOption = new PreferencesFragment.BooleanOption(
                     context,

@@ -249,7 +249,7 @@ public class MusicHudScreen extends Screen {
 
         addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.disconnect"), button -> {
             LoginService loginService = LoginService.getInstance();
-            loginService.disconnectToExternalOrIntegratedServer();
+            loginService.disconnect();
             ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.disconnected"));
         }).bounds(centerX - 100, y, 200, 20).build());
     }
@@ -338,14 +338,6 @@ public class MusicHudScreen extends Screen {
         boolean translated = CLIENT_CONFIG.getShowTranslatedCnLyrics();
         addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.showTranslatedLyrics", I18n.get(MusicHud.MOD_ID + ".gui.value." + (translated ? "on" : "off"))), button -> {
             CLIENT_CONFIG.setShowTranslatedCnLyrics(!translated);
-            CLIENT_CONFIG.save();
-            rebuildWidgets();
-        }).bounds(centerX - 100, y, 200, 20).build());
-        y += 24;
-
-        boolean isolated = CLIENT_CONFIG.getEnableIsolatedMode();
-        addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.label.isolatedMode", I18n.get(MusicHud.MOD_ID + ".gui.value." + (isolated ? "on" : "off"))), button -> {
-            CLIENT_CONFIG.setEnableIsolatedMode(!isolated);
             CLIENT_CONFIG.save();
             rebuildWidgets();
         }).bounds(centerX - 100, y, 200, 20).build());

@@ -94,15 +94,7 @@ public class MainFragment extends Fragment {
             accountBaseView.refresh();
         }
         if (instance != null && instance.titleText != null) {
-//            if (!clientConfig.getEnable()) {
-//                instance.titleText.setText(I18n.get(MusicHud.MOD_ID + ".text.disabled"));
-//            } else if (MusicHud.getConnectStatus() == MusicHud.ConnectStatus.NOT_CONNECTED && !clientConfig.getEnableIsolatedClient()) {
-//                instance.titleText.setText(I18n.get(MusicHud.MOD_ID + ".text.notConnected"));
-//            } else if (MusicHud.getConnectStatus() == MusicHud.ConnectStatus.INCOMPATIBLE && !clientConfig.getEnableIsolatedClient()) {
-//                instance.titleText.setText(I18n.get(MusicHud.MOD_ID + ".text.incompatibleWithServer"));
-//            } else {
-                instance.titleText.setText(I18n.get(MusicHud.MOD_ID + ".text.idle"));
-//            }
+            instance.titleText.setText(I18n.get(MusicHud.MOD_ID + ".text.idle"));
             instance.refreshServerConnectStatus();
         }
     }
@@ -478,20 +470,12 @@ public class MainFragment extends Fragment {
                     }
                 }
                 case NOT_CONNECTED -> {
-                    if (clientConfig.getEnableIsolatedMode()) {
-                        serverConnectStatus.setText(I18n.get(MusicHud.MOD_ID + ".text.notConnected.isolated"));
-                    } else {
-                        serverConnectStatus.setText(I18n.get(MusicHud.MOD_ID + ".text.notConnected"));
-                    }
+                    serverConnectStatus.setText(I18n.get(MusicHud.MOD_ID + ".text.notConnected"));
                     switchServerConnectButton.setVisibility(View.VISIBLE);
                     switchServerConnectButton.setText(I18n.get(MusicHud.MOD_ID + ".button.connect"));
                 }
                 case INCOMPATIBLE -> {
-                    if (clientConfig.getEnableIsolatedMode()) {
-                        serverConnectStatus.setText(I18n.get(MusicHud.MOD_ID + ".text.incompatible"));
-                    } else {
-                        serverConnectStatus.setText(I18n.get(MusicHud.MOD_ID + ".text.incompatible.isolated"));
-                    }
+                    serverConnectStatus.setText(I18n.get(MusicHud.MOD_ID + ".text.incompatible"));
                     switchServerConnectButton.setVisibility(View.VISIBLE);
                     switchServerConnectButton.setText(I18n.get(MusicHud.MOD_ID + ".button.connect"));
                 }

@@ -103,17 +103,9 @@ public interface ClientConfig {
 
     void setClientAccountConfig(ProfileConfigData clientAccountConfig);
 
-    boolean getEnabledInIntegratedServer();
-
-    void setEnabledInIntegratedServer(boolean enabledInIntegratedServer);
-
     boolean getEnableAutoConnect();
 
     void setEnableAutoConnect(boolean autoConnect);
-
-    boolean getEnableIsolatedMode();
-
-    void setEnableIsolatedMode(boolean autoConnect);
 
     AutoConnectServerFilterType getConnectServerFilterType();
 

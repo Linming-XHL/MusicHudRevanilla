@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 @RegisterMark
 public class ApiServerManager implements ServerRegister {
     private static final ServerConfig serverConfig = ServerConfig.getInstance();
-    private static ClientConfig clientConfig;
     @Getter
     private static ApiServerManager instance;
     private final Logger apiLogger = LogManager.getLogger(MusicHud.LOGGER_BASE_NAME + "/API");
@@ -34,16 +33,6 @@ public class ApiServerManager implements ServerRegister {
     private int triedCount = 0;
     private boolean initialized = false;
     private Thread hook;
-
-    static {
-        if (MusicHud.getCurrentEnvironment().getSide() == Environment.Side.CLIENT) {
-            try {
-                clientConfig = ClientConfig.getInstance();
-            } catch (UnsupportedOperationException e) {
-                clientConfig = null;
-            }
-        }
-    }
 
     public void log(String s, boolean error) {
         if (error || s.contains("[ERROR]")) {
@@ -60,9 +49,6 @@ public class ApiServerManager implements ServerRegister {
             return;
         }
         initialized = true;
-        if (MusicHud.getCurrentEnvironment().getSide() == Environment.Side.CLIENT && clientConfig != null && !clientConfig.getEnabledInIntegratedServer()) {
-            return;
-        }
         if (serverConfig.getStartupBinaryApiServerWhenLaunch()) {
             launchApiServerInternal();
         }
