@@ -228,14 +228,14 @@ public class MusicHudScreen extends Screen {
     private void addAccountWidgets(int centerX, int y) {
         addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.qrLogin"), button -> {
             LoginService loginService = LoginService.getInstance();
-            loginService.loginToServer(LoginService.ConnectionType.EXTERNAL);
+            loginService.loginToServer();
             ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.connecting"));
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
 
         addRenderableWidget(Button.builder(Component.translatable(MusicHud.MOD_ID + ".gui.button.anonymousLogin"), button -> {
             LoginService loginService = LoginService.getInstance();
-            loginService.loginToServer(LoginService.ConnectionType.EXTERNAL);
+            loginService.loginToServer();
             ToastUtil.show(I18n.get(MusicHud.MOD_ID + ".gui.text.loggingIn"));
         }).bounds(centerX - 100, y, 200, 20).build());
         y += 24;
